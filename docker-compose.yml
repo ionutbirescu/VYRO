@@ -1,0 +1,22 @@
+# Local development database. Start with: docker compose up -d db
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: vyro
+      POSTGRES_PASSWORD: vyro
+      POSTGRES_DB: vyro
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Creates the vyro_test database the API tests use.
+      - ./infra/local/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vyro -d vyro"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:

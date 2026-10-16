@@ -1,0 +1,5 @@
+# LF everywhere, so generated files (contract/openapi.json, mobile/src/api/schema.d.ts) are
+# byte-identical on Windows and macOS and the CI "is it up to date?" checks don't flap.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
