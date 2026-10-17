@@ -5,8 +5,10 @@ from pathlib import Path
 # Settings are cached on first use, so configure them before importing the app.
 os.environ.setdefault("VYRO_ENV", "test")
 os.environ.setdefault("VYRO_AUTH_MODE", "dev")
+# connect_timeout: if Docker is down, skip the DB tests in seconds instead of hanging.
 os.environ.setdefault(
-    "VYRO_DATABASE_URL", "postgresql+psycopg://vyro:vyro@localhost:5432/vyro_test"
+    "VYRO_DATABASE_URL",
+    "postgresql+psycopg://vyro:vyro@localhost:5432/vyro_test?connect_timeout=5",
 )
 
 import pytest

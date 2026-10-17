@@ -7,6 +7,8 @@
 # Creates the Artifact Registry repo, the runtime and deploy service accounts, Workload
 # Identity Federation so GitHub Actions can deploy without a key file (main branch of this
 # repo only), the IAM roles they need, and the GitHub Actions variables the deploy job reads.
+# Then the data stores: Cloud SQL (with its URL in Secret Manager and a migration job),
+# Firestore for chat, and the bucket for proof photos.
 # Needs gcloud logged in as a project Owner and gh logged in with admin rights on the repo.
 set -euo pipefail
 
@@ -77,6 +79,64 @@ exists gc iam workload-identity-pools providers describe "$PROVIDER" --location=
 gc iam service-accounts add-iam-policy-binding "$DEPLOY_SA" --role=roles/iam.workloadIdentityUser \
   --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$POOL/attribute.repository_id/$GITHUB_REPO_ID" \
   >/dev/null
+
+echo "== Runtime permissions"
+for role in roles/cloudsql.client roles/aiplatform.user; do
+  gc projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:$RUNTIME_SA" \
+    --role="$role" --condition=None >/dev/null
+done
+# Lets the API sign upload and view URLs for proof photos without a key file.
+gc iam service-accounts add-iam-policy-binding "$RUNTIME_SA" --member="serviceAccount:$RUNTIME_SA" \
+  --role=roles/iam.serviceAccountTokenCreator >/dev/null
+
+echo "== Cloud SQL (about \$10/month: the one resource that costs money while idle)"
+DB_INSTANCE=vyro-db
+DB_CONNECTION=$PROJECT_ID:$REGION:$DB_INSTANCE
+exists gc sql instances describe "$DB_INSTANCE" ||
+  gc sql instances create "$DB_INSTANCE" --database-version=POSTGRES_17 --edition=enterprise \
+    --tier=db-f1-micro --region="$REGION" --storage-size=10 --storage-auto-increase \
+    --backup-start-time=02:00 --deletion-protection
+exists gc sql databases describe vyro --instance="$DB_INSTANCE" ||
+  gc sql databases create vyro --instance="$DB_INSTANCE"
+# The password exists only inside the database URL in Secret Manager, which the API reads.
+if ! exists gc secrets describe vyro-database-url; then
+  password=$(openssl rand -hex 24)
+  gc sql users create vyro --instance="$DB_INSTANCE" --password="$password" ||
+    gc sql users set-password vyro --instance="$DB_INSTANCE" --password="$password"
+  printf 'postgresql+psycopg://vyro:%s@/vyro?host=/cloudsql/%s' "$password" "$DB_CONNECTION" |
+    gc secrets create vyro-database-url --replication-policy=automatic --data-file=-
+fi
+gc secrets add-iam-policy-binding vyro-database-url --member="serviceAccount:$RUNTIME_SA" \
+  --role=roles/secretmanager.secretAccessor >/dev/null
+
+echo "== Migration job"
+# Cloud Build updates this job's image and runs it before every deploy.
+image=$(gc run services describe vyro-api --region="$REGION" \
+  --format='value(spec.template.spec.containers[0].image)' 2>/dev/null || true)
+if [[ -z $image ]]; then
+  echo "No vyro-api service yet: re-run this script after the first deploy to add the job."
+else
+  exists gc run jobs describe vyro-migrate --region="$REGION" ||
+    gc run jobs create vyro-migrate --image="$image" --region="$REGION" \
+      --service-account="$RUNTIME_SA" --set-cloudsql-instances="$DB_CONNECTION" \
+      --set-secrets=VYRO_DATABASE_URL=vyro-database-url:latest \
+      --set-env-vars="VYRO_ENV=prod,VYRO_AUTH_MODE=firebase,VYRO_FIREBASE_PROJECT_ID=$PROJECT_ID" \
+      --command=alembic --args=upgrade,head --max-retries=0 --task-timeout=10m
+  gc run jobs execute vyro-migrate --region="$REGION" --wait
+fi
+
+echo "== Firestore (challenge chat)"
+exists gc firestore databases describe --database="(default)" ||
+  gc firestore databases create --database="(default)" --location="$REGION" \
+    --type=firestore-native
+
+echo "== Proof photo bucket"
+PROOF_BUCKET=gs://$PROJECT_ID-proofs
+exists gc storage buckets describe "$PROOF_BUCKET" ||
+  gc storage buckets create "$PROOF_BUCKET" --location="$REGION" --uniform-bucket-level-access \
+    --public-access-prevention
+gc storage buckets add-iam-policy-binding "$PROOF_BUCKET" --member="serviceAccount:$RUNTIME_SA" \
+  --role=roles/storage.objectAdmin >/dev/null
 
 echo "== GitHub Actions variables"
 gh variable set GCP_PROJECT_ID --repo "$GITHUB_REPO" --body "$PROJECT_ID"

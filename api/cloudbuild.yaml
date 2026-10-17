@@ -52,6 +52,8 @@ steps:
       # Public: the API authenticates every /v1 request with a Firebase ID token itself.
       - --allow-unauthenticated
       - --set-env-vars=VYRO_ENV=prod,VYRO_AUTH_MODE=firebase,VYRO_FIREBASE_PROJECT_ID=${PROJECT_ID}
+      - --set-cloudsql-instances=${PROJECT_ID}:${_REGION}:vyro-db
+      - --set-secrets=VYRO_DATABASE_URL=vyro-database-url:latest
       - --cpu=1
       - --memory=512Mi
       - --min-instances=0
