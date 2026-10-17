@@ -1,9 +1,11 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from app.schemas.common import Count, Level, Schema
 
 
-class Achievement(BaseModel):
+class Achievement(Schema):
     code: str
     name: str
     description: str
@@ -11,17 +13,17 @@ class Achievement(BaseModel):
     unlocked_at: datetime | None = Field(description="Null while still locked")
 
 
-class AchievementList(BaseModel):
+class AchievementList(Schema):
     items: list[Achievement]
 
 
-class Rewards(BaseModel):
+class Rewards(Schema):
     """What an action earned, for the app's celebration UI."""
 
-    xp_awarded: int
-    total_xp: int
-    level: int
+    xp_awarded: Count
+    total_xp: Count
+    level: Level
     leveled_up: bool
-    current_streak: int
+    current_streak: Count
     challenge_completed: bool
     new_achievements: list[Achievement]

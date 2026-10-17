@@ -2,22 +2,22 @@ from datetime import datetime
 from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import Field, StringConstraints
 
 from app.enums import AiVerdict, ProofStatus
-from app.schemas.common import ApiModel
+from app.schemas.common import ApiModel, Count, Schema
 from app.schemas.gamification import Rewards
 
 ImageContentType = Literal["image/jpeg", "image/png", "image/webp"]
 
 
-class UploadUrlRequest(BaseModel):
+class UploadUrlRequest(Schema):
     participation_id: UUID
     task_id: UUID
     content_type: ImageContentType = "image/jpeg"
 
 
-class UploadUrl(BaseModel):
+class UploadUrl(Schema):
     upload_url: str = Field(description="Signed Cloud Storage URL; upload the image bytes here")
     method: Literal["PUT"] = "PUT"
     headers: dict[str, str] = Field(description="Headers the upload request must send")
@@ -25,7 +25,7 @@ class UploadUrl(BaseModel):
     expires_at: datetime
 
 
-class ProofCreate(BaseModel):
+class ProofCreate(Schema):
     participation_id: UUID
     task_id: UUID
     object_path: Annotated[str, StringConstraints(max_length=512)]
@@ -42,17 +42,17 @@ class Proof(ApiModel):
     ai_verdict: AiVerdict | None
     ai_confidence: float | None = Field(ge=0, le=1)
     ai_reason: str | None
-    xp_awarded: int
+    xp_awarded: Count
     dispute_reason: str | None
     disputed_at: datetime | None
     submitted_at: datetime
     verified_at: datetime | None
 
 
-class ProofSubmission(BaseModel):
+class ProofSubmission(Schema):
     proof: Proof
     rewards: Rewards | None = Field(description="Present when the proof was approved")
 
 
-class DisputeCreate(BaseModel):
+class DisputeCreate(Schema):
     reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]

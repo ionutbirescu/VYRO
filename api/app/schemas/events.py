@@ -1,7 +1,9 @@
 from datetime import datetime
 from typing import Annotated, Any
 
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import Field, StringConstraints
+
+from app.schemas.common import Count, Schema
 
 EventName = Annotated[
     str,
@@ -10,15 +12,15 @@ EventName = Annotated[
 ]
 
 
-class ClientEvent(BaseModel):
+class ClientEvent(Schema):
     name: EventName
     properties: dict[str, Any] = Field(default_factory=dict)
     client_ts: datetime | None = Field(default=None, description="When it happened on the device")
 
 
-class EventBatch(BaseModel):
+class EventBatch(Schema):
     events: list[ClientEvent] = Field(min_length=1, max_length=100)
 
 
-class EventBatchAccepted(BaseModel):
-    accepted: int
+class EventBatchAccepted(Schema):
+    accepted: Count

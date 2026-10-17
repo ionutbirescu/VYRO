@@ -4,9 +4,9 @@ from typing import Annotated, Literal
 from uuid import UUID
 from zoneinfo import available_timezones
 
-from pydantic import AfterValidator, BaseModel, Field, StringConstraints
+from pydantic import AfterValidator, Field, StringConstraints
 
-from app.schemas.common import ApiModel, Difficulty
+from app.schemas.common import ApiModel, Count, Difficulty, Level, Schema
 
 
 @cache
@@ -35,23 +35,23 @@ class UserSummary(ApiModel):
     username: str
     display_name: str
     avatar_url: str | None
-    level: int
+    level: Level
 
 
 class UserProfile(UserSummary):
     bio: str | None
-    xp: int
-    current_streak: int
-    longest_streak: int
-    followers_count: int
-    following_count: int
-    completed_challenges: int
+    xp: Count
+    current_streak: Count
+    longest_streak: Count
+    followers_count: Count
+    following_count: Count
+    completed_challenges: Count
     created_at: datetime
 
 
 class Me(UserProfile):
     timezone: str
-    next_level_xp: int = Field(description="Total XP needed to reach the next level")
+    next_level_xp: Count = Field(description="Total XP needed to reach the next level")
     is_plus: bool
     plus_until: datetime | None
     suggested_difficulty: Difficulty = Field(
@@ -59,7 +59,7 @@ class Me(UserProfile):
     )
 
 
-class MeCreate(BaseModel):
+class MeCreate(Schema):
     username: Username
     display_name: DisplayName
     timezone: TimeZone = "UTC"
@@ -67,13 +67,13 @@ class MeCreate(BaseModel):
     research_consent: bool = Field(description="Informed consent for the pilot study")
 
 
-class MeUpdate(BaseModel):
+class MeUpdate(Schema):
     display_name: DisplayName | None = None
     bio: Bio | None = None
     avatar_url: Annotated[str, StringConstraints(max_length=512)] | None = None
     timezone: TimeZone | None = None
 
 
-class UserPage(BaseModel):
+class UserPage(Schema):
     items: list[UserSummary]
     next_cursor: str | None = None
