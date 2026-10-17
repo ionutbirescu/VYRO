@@ -1,5 +1,8 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
+# Local env — never commit secrets
+.env
+
 # dependencies
 node_modules/
 
