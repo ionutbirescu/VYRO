@@ -2424,6 +2424,7 @@
             "description": "Null while still locked"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "code",
@@ -2444,6 +2445,7 @@
             "title": "Items"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "items"
@@ -2462,12 +2464,14 @@
         "properties": {
           "used_today": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Used Today"
           },
           "daily_limit": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -2482,6 +2486,7 @@
             "title": "Resets At"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "used_today",
@@ -2578,6 +2583,7 @@
             "description": "Set when publishing a draft from the AI generator"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "title",
@@ -2626,6 +2632,7 @@
           },
           "total_xp": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Total Xp",
             "description": "XP for every task plus the completion bonus"
           },
@@ -2641,6 +2648,7 @@
           },
           "participant_count": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Participant Count"
           },
           "creator": {
@@ -2678,6 +2686,7 @@
             "description": "The current user's latest participation in this challenge"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "id",
@@ -2741,6 +2750,7 @@
             "description": "Exactly one task per day, numbered from 1"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "title",
@@ -2774,6 +2784,7 @@
             "title": "Next Cursor"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "items"
@@ -2826,6 +2837,7 @@
           },
           "total_xp": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Total Xp",
             "description": "XP for every task plus the completion bonus"
           },
@@ -2841,6 +2853,7 @@
           },
           "participant_count": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Participant Count"
           },
           "creator": {
@@ -2860,6 +2873,7 @@
             "title": "Created At"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "id",
@@ -2885,6 +2899,7 @@
             "title": "Product Code"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "product_code"
@@ -2904,6 +2919,7 @@
           },
           "price_cents": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Price Cents"
           },
           "currency": {
@@ -2921,6 +2937,7 @@
             "$ref": "#/components/schemas/Entitlements"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "purchase_id",
@@ -2960,6 +2977,7 @@
             "description": "When it happened on the device"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "name"
@@ -2975,6 +2993,7 @@
             "title": "Reason"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "reason"
@@ -3007,6 +3026,7 @@
             "title": "Cosmetics"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "is_plus",
@@ -3022,6 +3042,7 @@
             "title": "Detail"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "detail"
@@ -3040,6 +3061,7 @@
             "title": "Events"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "events"
@@ -3050,9 +3072,11 @@
         "properties": {
           "accepted": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Accepted"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "accepted"
@@ -3082,6 +3106,7 @@
             "description": "Mutual follow"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "user_id",
@@ -3145,6 +3170,7 @@
             "default": 1
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "title": "GenerateChallengeRequest"
       },
@@ -3163,6 +3189,7 @@
             "$ref": "#/components/schemas/AiQuota"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "generation_id",
@@ -3180,6 +3207,7 @@
             "title": "Rating"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "rating"
@@ -3211,6 +3239,7 @@
             "title": "Version"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "status",
@@ -3234,6 +3263,7 @@
             "description": "The recommendation_id from GET /v1/recommendations, if the challenge was joined from a recommendation"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "title": "JoinRequest"
       },
@@ -3263,6 +3293,7 @@
             "description": "The current user's row, even if not listed"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "challenge_id",
@@ -3283,10 +3314,12 @@
           },
           "completed_tasks": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Completed Tasks"
           },
           "xp_earned": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Xp Earned"
           },
           "last_progress_at": {
@@ -3302,6 +3335,7 @@
             "title": "Last Progress At"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "rank",
@@ -3340,6 +3374,7 @@
           },
           "level": {
             "type": "integer",
+            "minimum": 1.0,
             "title": "Level"
           },
           "bio": {
@@ -3355,26 +3390,32 @@
           },
           "xp": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Xp"
           },
           "current_streak": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Current Streak"
           },
           "longest_streak": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Longest Streak"
           },
           "followers_count": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Followers Count"
           },
           "following_count": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Following Count"
           },
           "completed_challenges": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Completed Challenges"
           },
           "created_at": {
@@ -3388,6 +3429,7 @@
           },
           "next_level_xp": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Next Level Xp",
             "description": "Total XP needed to reach the next level"
           },
@@ -3415,6 +3457,7 @@
             "description": "Current adaptive target difficulty; the default for AI Studio"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "id",
@@ -3472,6 +3515,7 @@
             "description": "Informed consent for the pilot study"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "username",
@@ -3535,6 +3579,7 @@
             "title": "Timezone"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "title": "MeUpdate"
       },
@@ -3552,6 +3597,7 @@
             "title": "Equipped"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "code",
@@ -3577,20 +3623,24 @@
           },
           "completed_tasks": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Completed Tasks"
           },
           "total_tasks": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Total Tasks"
           },
           "xp_earned": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Xp Earned"
           },
           "next_day_number": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -3629,6 +3679,7 @@
             "title": "Ended At"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "id",
@@ -3665,6 +3716,7 @@
             "title": "Next Cursor"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "items"
@@ -3698,20 +3750,24 @@
           },
           "completed_tasks": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Completed Tasks"
           },
           "total_tasks": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Total Tasks"
           },
           "xp_earned": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Xp Earned"
           },
           "next_day_number": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -3753,6 +3809,7 @@
             "$ref": "#/components/schemas/ChallengeSummary"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "id",
@@ -3788,6 +3845,7 @@
           },
           "price_cents": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Price Cents",
             "description": "Price for the user's A/B price variant"
           },
@@ -3800,6 +3858,7 @@
             "title": "Owned"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "code",
@@ -3831,6 +3890,7 @@
             "title": "Items"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "items"
@@ -3916,6 +3976,7 @@
           },
           "xp_awarded": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Xp Awarded"
           },
           "dispute_reason": {
@@ -3959,6 +4020,7 @@
             "title": "Verified At"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "id",
@@ -4008,6 +4070,7 @@
             "title": "Caption"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "participation_id",
@@ -4043,6 +4106,7 @@
             "description": "Present when the proof was approved"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "proof",
@@ -4075,6 +4139,7 @@
             ]
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "rank",
@@ -4099,6 +4164,7 @@
             "title": "Items"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "recommendation_id",
@@ -4125,6 +4191,7 @@
             "title": "Reason"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "target_type",
@@ -4141,6 +4208,7 @@
             "title": "Id"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "id"
@@ -4161,14 +4229,17 @@
         "properties": {
           "xp_awarded": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Xp Awarded"
           },
           "total_xp": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Total Xp"
           },
           "level": {
             "type": "integer",
+            "minimum": 1.0,
             "title": "Level"
           },
           "leveled_up": {
@@ -4177,6 +4248,7 @@
           },
           "current_streak": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Current Streak"
           },
           "challenge_completed": {
@@ -4191,6 +4263,7 @@
             "title": "New Achievements"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "xp_awarded",
@@ -4229,9 +4302,11 @@
           },
           "xp": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Xp"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "id",
@@ -4271,6 +4346,7 @@
             "description": "What the proof photo should show; used by AI verification"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "day_number",
@@ -4312,6 +4388,7 @@
             "title": "Expires At"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "upload_url",
@@ -4344,6 +4421,7 @@
             "default": "image/jpeg"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "participation_id",
@@ -4372,6 +4450,7 @@
             "title": "Next Cursor"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "items"
@@ -4406,6 +4485,7 @@
           },
           "level": {
             "type": "integer",
+            "minimum": 1.0,
             "title": "Level"
           },
           "bio": {
@@ -4421,26 +4501,32 @@
           },
           "xp": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Xp"
           },
           "current_streak": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Current Streak"
           },
           "longest_streak": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Longest Streak"
           },
           "followers_count": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Followers Count"
           },
           "following_count": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Following Count"
           },
           "completed_challenges": {
             "type": "integer",
+            "minimum": 0.0,
             "title": "Completed Challenges"
           },
           "created_at": {
@@ -4449,6 +4535,7 @@
             "title": "Created At"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "id",
@@ -4495,9 +4582,11 @@
           },
           "level": {
             "type": "integer",
+            "minimum": 1.0,
             "title": "Level"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "id",

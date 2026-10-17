@@ -1,9 +1,11 @@
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from app.schemas.common import Schema
 
 
-class FollowStatus(BaseModel):
+class FollowStatus(Schema):
     user_id: UUID
     following: bool = Field(description="The current user follows this user")
     followed_by: bool = Field(description="This user follows the current user")

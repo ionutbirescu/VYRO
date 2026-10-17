@@ -71,3 +71,10 @@ def test_ingest_events(db_client: TestClient, db: Session, user: User) -> None:
 def test_event_names_are_validated(db_client: TestClient, user: User) -> None:
     response = db_client.post("/v1/events", headers=auth(), json={"events": [{"name": "Bad Name"}]})
     assert response.status_code == 422
+
+
+def test_unknown_fields_are_rejected(db_client: TestClient, user: User) -> None:
+    response = db_client.post(
+        "/v1/events", headers=auth(), json={"events": [{"name": "tab_opened", "nmae": "typo"}]}
+    )
+    assert response.status_code == 422
