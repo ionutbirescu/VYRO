@@ -11,10 +11,11 @@ from app.config import get_settings
 
 @cache
 def get_engine() -> Engine:
-    # Cloud Run instances are small and Cloud SQL's smallest tier caps connections, so keep the
-    # pool tight. pool_pre_ping recovers from connections dropped while an instance was idle.
+    # Cloud SQL's db-f1-micro allows ~25 connections. At most 5 per instance times Cloud Run's
+    # 3 instances leaves room for the migration job and admin sessions. pool_pre_ping recovers
+    # from connections dropped while an instance was idle.
     return create_engine(
-        get_settings().database_url, pool_size=5, max_overflow=5, pool_pre_ping=True
+        get_settings().database_url, pool_size=3, max_overflow=2, pool_pre_ping=True
     )
 
 
