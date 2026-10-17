@@ -1,0 +1,19 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+*.pem
+service-account*.json
+
+# Editors and OS
+.idea/
+.DS_Store
+Thumbs.db
