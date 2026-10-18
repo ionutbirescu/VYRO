@@ -45,6 +45,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="auth" options={{ headerShown: false }} />
             <Stack.Screen name="challenge/[id]" options={{ title: 'Challenge' }} />
+            <Stack.Screen name="proof/submit" options={{ title: 'Submit Proof' }} />
           </Stack>
         </AuthGuard>
       </AuthProvider>
