@@ -162,6 +162,30 @@ export default function ChallengeScreen() {
             </ThemedText>
           </Pressable>
 
+          {/* Leaderboard + Chat */}
+          <View style={styles.secondaryActions}>
+            <Pressable
+              style={[styles.secondaryBtn, { backgroundColor: colors.backgroundElement, flex: 1 }]}
+              onPress={() =>
+                router.push({
+                  pathname: '/challenge/leaderboard',
+                  params: { challenge_id: challenge.id },
+                })
+              }>
+              <ThemedText type="smallBold">🏆 Leaderboard</ThemedText>
+            </Pressable>
+            <Pressable
+              style={[styles.secondaryBtn, { backgroundColor: colors.backgroundElement, flex: 1 }]}
+              onPress={() =>
+                router.push({
+                  pathname: '/challenge/chat',
+                  params: { challenge_id: challenge.id },
+                })
+              }>
+              <ThemedText type="smallBold">💬 Chat</ThemedText>
+            </Pressable>
+          </View>
+
           {/* Task list */}
           <ThemedText type="smallBold" style={styles.sectionTitle}>
             DAILY TASKS
@@ -258,6 +282,8 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     alignItems: 'center',
   },
+  secondaryActions: { flexDirection: 'row', gap: Spacing.two },
+  secondaryBtn: { borderRadius: 12, padding: Spacing.three, alignItems: 'center' },
   sectionTitle: { letterSpacing: 0.8, marginTop: Spacing.two },
   taskCard: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
   taskHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },

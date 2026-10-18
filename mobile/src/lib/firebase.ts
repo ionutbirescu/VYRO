@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import { initializeApp } from 'firebase/app';
 import { browserLocalPersistence, initializeAuth, type Persistence } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 import { FIREBASE_CONFIG } from '@/config';
 
@@ -34,3 +35,4 @@ if (Platform.OS === 'web') {
 }
 
 export const auth = initializeAuth(app, { persistence });
+export const db = getFirestore(app);
