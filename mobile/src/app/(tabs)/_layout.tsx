@@ -1,4 +1,5 @@
-import { NativeTabs } from 'expo-router/native-tabs';
+// SDK 57 name; SDK 58 moves this to 'expo-router/native-tabs'.
+import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 import { useTheme } from '@/hooks/use-theme';
 
