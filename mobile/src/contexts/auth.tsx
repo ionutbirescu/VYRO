@@ -8,6 +8,7 @@ import {
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 import { api, setTokenProvider } from '@/api/client';
+import { DEV_UID } from '@/config';
 import { auth } from '@/lib/firebase';
 import type { Schemas } from '@/api/client';
 
@@ -42,6 +43,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ status: 'loading' });
 
   useEffect(() => {
+    // Dev mode: skip Firebase and go straight into the app with mock data.
+    if (DEV_UID) {
+      setTokenProvider(async () => `dev:${DEV_UID}`);
+      api.GET('/v1/me').then(({ data }) => {
+        if (data) setState({ status: 'ready', user: null as unknown as FirebaseUser, profile: data });
+        else setState({ status: 'unauthenticated' });
+      });
+      return;
+    }
+
     return onAuthStateChanged(auth, async (user) => {
       if (!user) {
         setTokenProvider(async () => null);
