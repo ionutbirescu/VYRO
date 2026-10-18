@@ -78,9 +78,8 @@ export default function ExploreScreen() {
   );
 
   // Reload when category changes immediately.
-  useEffect(() => {
-    load(query, category);
-  }, [category]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+  useEffect(() => { load(query, category); }, [category]);
 
   // Debounce search query.
   useEffect(() => {
