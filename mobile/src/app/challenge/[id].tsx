@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -203,6 +203,26 @@ export default function ChallengeScreen() {
                   <ThemedText type="small" themeColor="textSecondary" style={styles.taskInstructions}>
                     {task.instructions}
                   </ThemedText>
+                  {current && participation && (
+                    <Pressable
+                      style={[styles.submitBtn, { backgroundColor: diff.color }]}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/proof/submit',
+                          params: {
+                            task_id: task.id,
+                            participation_id: participation.id,
+                            task_title: task.title,
+                            proof_hint: task.proof_hint,
+                            challenge_id: challenge.id,
+                          },
+                        })
+                      }>
+                      <ThemedText type="smallBold" style={{ color: '#fff' }}>
+                        📸 Submit proof
+                      </ThemedText>
+                    </Pressable>
+                  )}
                 </View>
               );
             })}
@@ -247,4 +267,5 @@ const styles = StyleSheet.create({
   },
   taskTitle: { flex: 1 },
   taskInstructions: { lineHeight: 20, paddingLeft: 40 },
+  submitBtn: { marginTop: Spacing.two, borderRadius: 10, padding: Spacing.two, alignItems: 'center', marginLeft: 40 },
 });
