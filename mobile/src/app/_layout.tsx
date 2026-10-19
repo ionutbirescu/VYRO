@@ -1,10 +1,10 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
 
 import { logEvent } from '@/api/events';
 import { AuthProvider, useAuth } from '@/contexts/auth';
+import { ThemePreferenceProvider, useThemePreference } from '@/contexts/theme-preference';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { state } = useAuth();
@@ -30,25 +30,35 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
+function ThemedStack() {
+  const { resolvedScheme } = useThemePreference();
 
   useEffect(() => {
     logEvent('app_opened');
   }, []);
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={resolvedScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AuthProvider>
         <AuthGuard>
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="auth" options={{ headerShown: false }} />
             <Stack.Screen name="challenge/[id]" options={{ title: 'Challenge' }} />
+            <Stack.Screen name="challenge/leaderboard" options={{ title: 'Leaderboard' }} />
+            <Stack.Screen name="challenge/chat" options={{ title: 'Chat' }} />
             <Stack.Screen name="proof/submit" options={{ title: 'Submit Proof' }} />
           </Stack>
         </AuthGuard>
       </AuthProvider>
     </ThemeProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ThemePreferenceProvider>
+      <ThemedStack />
+    </ThemePreferenceProvider>
   );
 }

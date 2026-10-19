@@ -2,7 +2,8 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,7 +17,7 @@ import type { Schemas } from '@/api/client';
 import { ChallengeCard } from '@/components/challenge-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { BottomTabInset, MaxContentWidth, Spacing, TabBarWebInset } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 const CATEGORIES = [
@@ -90,91 +91,90 @@ export default function ExploreScreen() {
     };
   }, [query]);
 
-  function loadMore() {
-    if (cursor && !loadingMore) load(query, category, cursor);
+  function handleScroll({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) {
+    const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+    if (
+      cursor &&
+      !loadingMore &&
+      layoutMeasurement.height + contentOffset.y >= contentSize.height - 300
+    ) {
+      load(query, category, cursor);
+    }
   }
 
   return (
     <ThemedView style={styles.root}>
       <SafeAreaView style={styles.safeArea}>
-        <FlatList
-          data={items}
-          keyExtractor={(item) => item.id}
+        <ScrollView
+          style={styles.scroll}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.4}
-          ListHeaderComponent={
-            <View>
-              {/* Search bar */}
-              <TextInput
-                style={[
-                  styles.searchBar,
-                  { backgroundColor: colors.backgroundElement, color: colors.text },
-                ]}
-                placeholder="Search challenges…"
-                placeholderTextColor={colors.textSecondary}
-                value={query}
-                onChangeText={setQuery}
-                returnKeyType="search"
-                clearButtonMode="while-editing"
-              />
+          onScroll={handleScroll}
+          scrollEventThrottle={200}>
 
-              {/* Category pills */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.pills}>
-                {CATEGORIES.map((cat) => {
-                  const active = cat.key === category;
-                  return (
-                    <Pressable
-                      key={cat.label}
-                      style={[
-                        styles.pill,
-                        {
-                          backgroundColor: active ? colors.text : colors.backgroundElement,
-                        },
-                      ]}
-                      onPress={() => setCategory(cat.key)}>
-                      <ThemedText
-                        type="small"
-                        style={{ color: active ? colors.background : colors.text }}>
-                        {cat.label}
-                      </ThemedText>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
+          {/* Search bar */}
+          <TextInput
+            style={[
+              styles.searchBar,
+              { backgroundColor: colors.backgroundElement, color: colors.text },
+            ]}
+            placeholder="Search challenges…"
+            placeholderTextColor={colors.textSecondary}
+            value={query}
+            onChangeText={setQuery}
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+          />
 
-              {loading && (
-                <ActivityIndicator style={styles.spinner} color={colors.textSecondary} />
-              )}
+          {/* Category pills */}
+          <View style={styles.pills}>
+            {CATEGORIES.map((cat) => {
+              const active = cat.key === category;
+              return (
+                <Pressable
+                  key={cat.label}
+                  style={[
+                    styles.pill,
+                    { backgroundColor: active ? colors.text : colors.backgroundElement },
+                  ]}
+                  onPress={() => setCategory(cat.key)}>
+                  <ThemedText
+                    type="small"
+                    style={{ color: active ? colors.background : colors.text }}>
+                    {cat.label}
+                  </ThemedText>
+                </Pressable>
+              );
+            })}
+          </View>
 
-              {!loading && items.length === 0 && (
-                <ThemedText
-                  type="small"
-                  themeColor="textSecondary"
-                  style={styles.empty}>
-                  No challenges found.
-                </ThemedText>
-              )}
-            </View>
-          }
-          renderItem={({ item }) => (
-            <ChallengeCard
-              variant="full"
-              challenge={item}
-              onPress={() => router.push(`/challenge/${item.id}`)}
-            />
+          {loading && (
+            <ActivityIndicator style={styles.spinner} color={colors.textSecondary} />
           )}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          ListFooterComponent={
-            loadingMore ? (
-              <ActivityIndicator style={styles.spinner} color={colors.textSecondary} />
-            ) : undefined
-          }
-        />
+
+          {!loading && items.length === 0 && (
+            <ThemedText type="small" themeColor="textSecondary" style={styles.empty}>
+              No challenges found.
+            </ThemedText>
+          )}
+
+          {/* Challenge list */}
+          <View style={styles.cardList}>
+            {items.map((item, index) => (
+              <ChallengeCard
+                key={`${item.id}-${index}`}
+                variant="full"
+                challenge={item}
+                onPress={() => router.push(`/challenge/${item.id}`)}
+              />
+            ))}
+          </View>
+
+          {loadingMore && (
+            <ActivityIndicator style={styles.spinner} color={colors.textSecondary} />
+          )}
+
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -183,10 +183,13 @@ export default function ExploreScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   safeArea: { flex: 1, alignItems: 'center' },
+  scroll: { flex: 1, width: '100%' },
   list: {
-    width: '100%',
     maxWidth: MaxContentWidth,
+    width: '100%',
+    alignSelf: 'center',
     paddingHorizontal: Spacing.four,
+    paddingTop: TabBarWebInset,
     paddingBottom: BottomTabInset + Spacing.four,
   },
   searchBar: {
@@ -194,10 +197,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two + 2,
     fontSize: 16,
-    marginTop: Spacing.three,
+    marginTop: Spacing.six,
     marginBottom: Spacing.two,
   },
   pills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.one,
     paddingVertical: Spacing.two,
     paddingBottom: Spacing.three,
@@ -207,7 +212,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one + 2,
     borderRadius: 99,
   },
-  separator: { height: Spacing.two },
+  cardList: { gap: Spacing.two },
   spinner: { marginVertical: Spacing.four },
   empty: { textAlign: 'center', marginTop: Spacing.five },
 });

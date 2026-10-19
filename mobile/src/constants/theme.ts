@@ -10,17 +10,17 @@ import { Platform } from 'react-native';
 export const Colors = {
   light: {
     text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    background: '#F2F2F7',
+    backgroundElement: '#FFFFFF',
+    backgroundSelected: '#E5E5EA',
+    textSecondary: '#6C6C70',
   },
   dark: {
-    text: '#ffffff',
+    text: '#FFFFFF',
     background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    backgroundElement: '#1C1C1E',
+    backgroundSelected: '#2C2C2E',
+    textSecondary: '#8E8E93',
   },
 } as const;
 
@@ -62,4 +62,5 @@ export const Spacing = {
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
+export const TabBarWebInset = Platform.select({ web: 48, default: 0 }) ?? 0;
 export const MaxContentWidth = 800;

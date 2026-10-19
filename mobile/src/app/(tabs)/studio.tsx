@@ -15,7 +15,7 @@ import { api } from '@/api/client';
 import type { Schemas } from '@/api/client';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { BottomTabInset, MaxContentWidth, Spacing, TabBarWebInset } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingBottom: BottomTabInset + Spacing.four,
     gap: Spacing.three,
-    paddingTop: Spacing.four,
+    paddingTop: TabBarWebInset + Spacing.four,
   },
   heading: { marginBottom: -Spacing.two },
   quotaBar: { borderRadius: 12, padding: Spacing.two + 2, alignItems: 'center' },

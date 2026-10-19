@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://vyro:vyro@localhost:5432/vyro"
     auth_mode: AuthMode = AuthMode.DEV
     firebase_project_id: str | None = None
-    cors_origins: list[str] = ["http://localhost:8081"]
+    cors_origins: list[str] = ["http://localhost:8081", "http://localhost:8082"]
 
     @model_validator(mode="after")
     def _check_prod_safety(self) -> Self:

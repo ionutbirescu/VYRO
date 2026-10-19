@@ -6,7 +6,7 @@ import { api } from '@/api/client';
 import type { Schemas } from '@/api/client';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { BottomTabInset, MaxContentWidth, Spacing, TabBarWebInset } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -142,7 +142,7 @@ export default function ShopScreen() {
                   </ThemedText>
                   {!p.owned && (
                     <ThemedText type="small" style={{ color: '#00000080' }}>
-                      Sandbox — no real charge
+                      Sandbox - no real charge
                     </ThemedText>
                   )}
                 </Pressable>
@@ -247,13 +247,13 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
+    paddingTop: TabBarWebInset + Spacing.four,
     paddingBottom: BottomTabInset + Spacing.four,
     gap: Spacing.four,
   },
   plusCard: {
     borderRadius: 20,
-    padding: Spacing.four,
+    padding: Spacing.six,
     gap: Spacing.three,
   },
   plusTitle: { color: '#f8fafc' },

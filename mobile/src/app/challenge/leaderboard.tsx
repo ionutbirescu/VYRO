@@ -1,6 +1,7 @@
+import { FlashList } from '@shopify/flash-list';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api } from '@/api/client';
@@ -53,7 +54,7 @@ export default function LeaderboardScreen() {
   return (
     <ThemedView style={styles.root}>
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        <FlatList
+        <FlashList
           data={leaderboard.entries}
           keyExtractor={(item) => item.user.id}
           style={styles.flex}
@@ -111,6 +112,7 @@ export default function LeaderboardScreen() {
             <View style={[styles.separator, { backgroundColor: colors.backgroundElement }]} />
           )}
         />
+
       </SafeAreaView>
     </ThemedView>
   );

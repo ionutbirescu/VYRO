@@ -8,7 +8,7 @@ import type { Schemas } from '@/api/client';
 import { ChallengeCard } from '@/components/challenge-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { BottomTabInset, MaxContentWidth, Spacing, TabBarWebInset } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -163,6 +163,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.four,
+    paddingTop: TabBarWebInset,
     paddingBottom: BottomTabInset + Spacing.four,
   },
   header: {

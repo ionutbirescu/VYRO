@@ -3,14 +3,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { BottomTabInset, MaxContentWidth, Spacing, TabBarWebInset } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
+import { type ThemePreference, useThemePreference } from '@/contexts/theme-preference';
 import { useTheme } from '@/hooks/use-theme';
 import type { Schemas } from '@/api/client';
+
+const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
+  { value: 'light', label: '☀️ Light' },
+  { value: 'system', label: '⚙️ System' },
+  { value: 'dark', label: '🌙 Dark' },
+];
 
 export default function ProfileScreen() {
   const { state, signOut } = useAuth();
   const colors = useTheme();
+  const { preference, setPreference } = useThemePreference();
 
   if (state.status !== 'ready') return null;
 
@@ -81,9 +89,31 @@ export default function ProfileScreen() {
             />
           </View>
 
+          {/* Theme picker */}
+          <View style={[styles.themeRow, { backgroundColor: colors.backgroundElement }]}>
+            {THEME_OPTIONS.map((opt) => {
+              const active = opt.value === preference;
+              return (
+                <Pressable
+                  key={opt.value}
+                  style={[
+                    styles.themeBtn,
+                    active && { backgroundColor: colors.backgroundSelected },
+                  ]}
+                  onPress={() => setPreference(opt.value)}>
+                  <ThemedText
+                    type="small"
+                    style={{ fontWeight: active ? '700' : '500' }}>
+                    {opt.label}
+                  </ThemedText>
+                </Pressable>
+              );
+            })}
+          </View>
+
           {/* Sign out */}
           <Pressable
-            style={[styles.signOutBtn, { borderColor: colors.backgroundElement }]}
+            style={[styles.signOutBtn, { borderColor: colors.backgroundSelected }]}
             onPress={signOut}>
             <ThemedText type="small" themeColor="textSecondary">Sign out</ThemedText>
           </Pressable>
@@ -111,6 +141,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.four,
+    paddingTop: TabBarWebInset,
     paddingBottom: BottomTabInset + Spacing.four,
     gap: Spacing.three,
   },
@@ -178,11 +209,22 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
   },
+  themeRow: {
+    flexDirection: 'row',
+    borderRadius: 14,
+    padding: 4,
+    gap: 4,
+  },
+  themeBtn: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: Spacing.two,
+    alignItems: 'center',
+  },
   signOutBtn: {
     borderWidth: 1,
     borderRadius: 12,
     padding: Spacing.three,
     alignItems: 'center',
-    marginTop: Spacing.two,
   },
 });
