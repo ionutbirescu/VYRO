@@ -7,6 +7,9 @@ from pydantic import Field
 from app.enums import AcquiredVia, ProductKind
 from app.schemas.common import Count, Schema
 
+# The sandbox shop sells in US dollars only (ISO 4217 code).
+Currency = Literal["USD"]
+
 
 class Product(Schema):
     code: str
@@ -14,7 +17,7 @@ class Product(Schema):
     name: str
     description: str
     price_cents: Count = Field(description="Price for the user's A/B price variant")
-    currency: str
+    currency: Currency
     owned: bool
 
 
@@ -42,6 +45,6 @@ class CheckoutResult(Schema):
     purchase_id: UUID
     product_code: str
     price_cents: Count
-    currency: str
+    currency: Currency
     sandbox: Literal[True] = Field(default=True, description="Always true; no money moves")
     entitlements: Entitlements
