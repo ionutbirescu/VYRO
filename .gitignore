@@ -6,6 +6,9 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
+# Proof photos stored by a local API (no Cloud Storage bucket)
+api/.uploads/
+
 # Secrets and local config
 .env
 .env.*

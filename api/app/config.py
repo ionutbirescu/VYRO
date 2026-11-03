@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     auth_mode: AuthMode = AuthMode.DEV
     firebase_project_id: str | None = None
     cors_origins: list[str] = ["http://localhost:8081"]
+    # Cloud Storage bucket for proof photos. Unset locally: the API stores them itself.
+    # Not validated here: the migration job shares these settings and has no bucket.
+    proof_bucket: str | None = None
 
     @model_validator(mode="after")
     def _check_prod_safety(self) -> Self:

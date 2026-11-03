@@ -8,6 +8,7 @@ from app.config import get_settings
 from app.routers import (
     ai,
     challenges,
+    dev_uploads,
     events,
     gamification,
     health,
@@ -67,6 +68,8 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(v1)
+    if not settings.proof_bucket and settings.env != "prod":
+        app.include_router(dev_uploads.router)
     return app
 
 

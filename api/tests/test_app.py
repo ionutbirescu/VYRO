@@ -1,4 +1,7 @@
+from pathlib import Path
+
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from sqlalchemy import select
@@ -6,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.config import AuthMode, Settings
 from app.models import Event, User
+from app.services import storage
 from scripts import export_openapi
 from tests.conftest import auth
 
@@ -48,7 +52,7 @@ def test_unregistered_user_must_register(db_client: TestClient) -> None:
 
 
 def test_unbuilt_endpoint_is_501(db_client: TestClient, user: User) -> None:
-    assert db_client.get("/v1/challenges", headers=auth()).status_code == 501
+    assert db_client.get("/v1/recommendations", headers=auth()).status_code == 501
 
 
 def test_ingest_events(db_client: TestClient, db: Session, user: User) -> None:
@@ -78,3 +82,11 @@ def test_unknown_fields_are_rejected(db_client: TestClient, user: User) -> None:
         "/v1/events", headers=auth(), json={"events": [{"name": "tab_opened", "nmae": "typo"}]}
     )
     assert response.status_code == 422
+
+
+def test_prod_never_stores_proofs_locally(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    prod = Settings(env="prod", auth_mode=AuthMode.FIREBASE, firebase_project_id="vyro")
+    monkeypatch.setattr(storage, "get_settings", lambda: prod)
+    with pytest.raises(HTTPException) as error:
+        storage.get_storage(storage.LocalStorage(tmp_path, "http://testserver"))
+    assert error.value.status_code == 503
