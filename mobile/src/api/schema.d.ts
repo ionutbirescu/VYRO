@@ -774,8 +774,11 @@ export interface components {
             product_code: string;
             /** Price Cents */
             price_cents: number;
-            /** Currency */
-            currency: string;
+            /**
+             * Currency
+             * @constant
+             */
+            currency: "USD";
             /**
              * Sandbox
              * @description Always true; no money moves
@@ -1129,8 +1132,11 @@ export interface components {
              * @description Price for the user's A/B price variant
              */
             price_cents: number;
-            /** Currency */
-            currency: string;
+            /**
+             * Currency
+             * @constant
+             */
+            currency: "USD";
             /** Owned */
             owned: boolean;
         };
