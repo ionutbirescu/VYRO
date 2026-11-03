@@ -1,13 +1,15 @@
 from datetime import UTC, date, datetime, timedelta
+from uuid import uuid4
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.enums import Category, ParticipationStatus, ProofStatus
 from app.models import Participation, Proof, User, UserAchievement
 from app.services import achievements, progress
-from tests.conftest import make_challenge
+from tests.conftest import auth, make_challenge, make_user
 
 NOW = datetime(2026, 11, 3, 12, 0, tzinfo=UTC)
 
@@ -153,3 +155,18 @@ def test_completed_today_uses_local_days(user: User) -> None:
     assert progress.completed_today(user, participation, NOW + timedelta(hours=11))
     assert not progress.completed_today(user, participation, NOW + timedelta(hours=12))
     assert not progress.completed_today(user, Participation(), NOW)
+
+
+def test_achievements_endpoint(db_client: TestClient, db: Session, user: User) -> None:
+    other = make_user(db, "other")
+    db.add(UserAchievement(user_id=other.id, code="streak_3", unlocked_at=NOW))
+    db.flush()
+
+    response = db_client.get(f"/v1/users/{other.id}/achievements", headers=auth())
+    assert response.status_code == 200
+    items = response.json()["items"]
+    assert len(items) == len(achievements.DEFINITIONS)
+    assert [a["code"] for a in items if a["unlocked_at"]] == ["streak_3"]
+
+    missing = db_client.get(f"/v1/users/{uuid4()}/achievements", headers=auth())
+    assert missing.status_code == 404
