@@ -78,3 +78,8 @@ def test_unknown_fields_are_rejected(db_client: TestClient, user: User) -> None:
         "/v1/events", headers=auth(), json={"events": [{"name": "tab_opened", "nmae": "typo"}]}
     )
     assert response.status_code == 422
+
+
+def test_prod_requires_a_proof_bucket() -> None:
+    with pytest.raises(ValidationError):
+        Settings(env="prod", auth_mode=AuthMode.FIREBASE, firebase_project_id="vyro")

@@ -24,8 +24,11 @@ from app.enums import Category, ChallengeSource, PriceVariant, StudyGroup, Visib
 from app.main import create_app
 from app.models import Challenge, ChallengeTask, User
 from app.services import progress
+from app.services.storage import LocalStorage, get_local_storage
 
 API_DIR = Path(__file__).resolve().parents[1]
+# TestClient's default host.
+BASE_URL = "http://testserver"
 
 
 @pytest.fixture(scope="session")
@@ -62,9 +65,11 @@ def client() -> Iterator[TestClient]:
 
 
 @pytest.fixture
-def db_client(db: Session) -> Iterator[TestClient]:
+def db_client(db: Session, tmp_path: Path) -> Iterator[TestClient]:
     app = create_app()
     app.dependency_overrides[get_db] = lambda: db
+    # Proof photos go to a temporary folder instead of api/.uploads.
+    app.dependency_overrides[get_local_storage] = lambda: LocalStorage(tmp_path, BASE_URL)
     with TestClient(app) as test_client:
         yield test_client
 

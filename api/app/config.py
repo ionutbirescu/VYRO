@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     auth_mode: AuthMode = AuthMode.DEV
     firebase_project_id: str | None = None
     cors_origins: list[str] = ["http://localhost:8081"]
+    # Cloud Storage bucket for proof photos. Unset locally: the API stores them itself.
+    proof_bucket: str | None = None
 
     @model_validator(mode="after")
     def _check_prod_safety(self) -> Self:
@@ -28,6 +30,8 @@ class Settings(BaseSettings):
             raise ValueError("VYRO_AUTH_MODE=dev is not allowed when VYRO_ENV=prod")
         if self.auth_mode is AuthMode.FIREBASE and not self.firebase_project_id:
             raise ValueError("VYRO_FIREBASE_PROJECT_ID is required when VYRO_AUTH_MODE=firebase")
+        if self.env == "prod" and not self.proof_bucket:
+            raise ValueError("VYRO_PROOF_BUCKET is required when VYRO_ENV=prod")
         return self
 
 
