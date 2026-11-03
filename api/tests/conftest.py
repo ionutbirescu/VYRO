@@ -20,9 +20,10 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from app.db import get_db, get_engine
-from app.enums import PriceVariant, StudyGroup
+from app.enums import Category, ChallengeSource, PriceVariant, StudyGroup, Visibility
 from app.main import create_app
-from app.models import User
+from app.models import Challenge, ChallengeTask, User
+from app.services import progress
 
 API_DIR = Path(__file__).resolve().parents[1]
 
@@ -70,17 +71,58 @@ def db_client(db: Session) -> Iterator[TestClient]:
 
 @pytest.fixture
 def user(db: Session) -> User:
+    return make_user(db, "test-user", username="tester")
+
+
+def auth(uid: str = "test-user") -> dict[str, str]:
+    return {"Authorization": f"Bearer dev:{uid}"}
+
+
+def make_user(db: Session, uid: str, username: str | None = None, **fields: object) -> User:
     user = User(
-        firebase_uid="test-user",
-        username="tester",
-        display_name="Test User",
+        firebase_uid=uid,
+        username=username or uid.replace("-", "_"),
+        display_name=uid.title(),
         study_group=StudyGroup.TREATMENT,
         price_variant=PriceVariant.A,
+        **fields,
     )
     db.add(user)
     db.flush()
     return user
 
 
-def auth(uid: str = "test-user") -> dict[str, str]:
-    return {"Authorization": f"Bearer dev:{uid}"}
+def make_challenge(
+    db: Session,
+    *,
+    creator: User | None = None,
+    title: str = "Daily pushups",
+    category: Category = Category.FITNESS,
+    difficulty: int = 2,
+    duration_days: int = 7,
+    visibility: Visibility = Visibility.PUBLIC,
+) -> Challenge:
+    challenge = Challenge(
+        title=title,
+        description="Do pushups every day.",
+        category=category,
+        difficulty=difficulty,
+        duration_days=duration_days,
+        completion_xp=progress.completion_xp(difficulty, duration_days),
+        source=ChallengeSource.USER if creator else ChallengeSource.TEMPLATE,
+        visibility=visibility,
+        creator_id=creator.id if creator else None,
+        tasks=[
+            ChallengeTask(
+                day_number=day,
+                title=f"Day {day}",
+                instructions="Do 20 pushups.",
+                proof_hint="You mid-pushup",
+                xp=progress.task_xp(difficulty),
+            )
+            for day in range(1, duration_days + 1)
+        ],
+    )
+    db.add(challenge)
+    db.flush()
+    return challenge
