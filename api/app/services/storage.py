@@ -121,8 +121,12 @@ def get_local_storage(request: Request) -> LocalStorage:
 def get_storage(
     local: Annotated[LocalStorage, Depends(get_local_storage)],
 ) -> ProofStorage:
-    bucket = get_settings().proof_bucket
-    return _cloud_storage(bucket) if bucket else local
+    settings = get_settings()
+    if settings.proof_bucket:
+        return _cloud_storage(settings.proof_bucket)
+    if settings.env == "prod":
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Proof storage is not set up")
+    return local
 
 
 Storage = Annotated[ProofStorage, Depends(get_storage)]

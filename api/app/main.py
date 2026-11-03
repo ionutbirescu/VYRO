@@ -68,7 +68,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(v1)
-    if not settings.proof_bucket:
+    if not settings.proof_bucket and settings.env != "prod":
         app.include_router(dev_uploads.router)
     return app
 

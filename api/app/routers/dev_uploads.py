@@ -1,7 +1,7 @@
 """Stands in for Cloud Storage when no proof bucket is set (local development and tests).
 
 Like a signed URL, these routes take no bearer token. They are only mounted without a bucket,
-which the settings forbid in production.
+and never in production.
 """
 
 from typing import Annotated

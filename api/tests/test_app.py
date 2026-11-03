@@ -1,4 +1,7 @@
+from pathlib import Path
+
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from sqlalchemy import select
@@ -6,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.config import AuthMode, Settings
 from app.models import Event, User
+from app.services import storage
 from scripts import export_openapi
 from tests.conftest import auth
 
@@ -80,6 +84,9 @@ def test_unknown_fields_are_rejected(db_client: TestClient, user: User) -> None:
     assert response.status_code == 422
 
 
-def test_prod_requires_a_proof_bucket() -> None:
-    with pytest.raises(ValidationError):
-        Settings(env="prod", auth_mode=AuthMode.FIREBASE, firebase_project_id="vyro")
+def test_prod_never_stores_proofs_locally(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    prod = Settings(env="prod", auth_mode=AuthMode.FIREBASE, firebase_project_id="vyro")
+    monkeypatch.setattr(storage, "get_settings", lambda: prod)
+    with pytest.raises(HTTPException) as error:
+        storage.get_storage(storage.LocalStorage(tmp_path, "http://testserver"))
+    assert error.value.status_code == 503
