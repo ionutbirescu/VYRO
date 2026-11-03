@@ -68,6 +68,11 @@ def current_streak(user: User, now: datetime) -> int:
     return user.current_streak
 
 
+def lock(db: Session, user: User) -> None:
+    """Lock the user's row until commit, so their joins, leaves and approvals run one at a time."""
+    db.refresh(user, with_for_update=True)
+
+
 def completed_today(user: User, participation: Participation, now: datetime) -> bool:
     """Whether this participation already moved forward today. Each task takes its own day."""
     last = participation.last_progress_at
