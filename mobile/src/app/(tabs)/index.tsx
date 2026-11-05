@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -8,9 +9,8 @@ import type { Schemas } from '@/api/client';
 import { ChallengeCard } from '@/components/challenge-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { BottomTabInset, MaxContentWidth, Spacing, TabBarWebInset } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
-import { useTheme } from '@/hooks/use-theme';
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -26,7 +26,6 @@ type AsyncData<T> =
 
 export default function HomeScreen() {
   const { state } = useAuth();
-  const colors = useTheme();
   const profile = state.status === 'ready' ? state.profile : null;
 
   const [active, setActive] = useState<AsyncData<Schemas['ParticipationWithChallenge'][]>>({
@@ -57,21 +56,24 @@ export default function HomeScreen() {
 
           {/* Header */}
           <View style={styles.header}>
-            <ThemedText type="subtitle">
+            <ThemedText style={styles.greeting}>
               {greeting()}{profile ? `, ${profile.display_name.split(' ')[0]}` : ''}
             </ThemedText>
             {profile && (
               <View style={styles.statsRow}>
-                <View style={[styles.statBadge, { backgroundColor: colors.backgroundElement }]}>
-                  <ThemedText type="smallBold">Lv {profile.level}</ThemedText>
-                </View>
                 <ThemedText type="small" themeColor="textSecondary">
-                  {profile.xp.toLocaleString()} XP
+                  Level {profile.level} · {profile.xp.toLocaleString()} XP
                 </ThemedText>
                 {profile.current_streak > 0 && (
-                  <ThemedText type="small" themeColor="textSecondary">
-                    🔥 {profile.current_streak} day{profile.current_streak !== 1 ? 's' : ''}
-                  </ThemedText>
+                  <>
+                    <ThemedText type="small" themeColor="textSecondary">·</ThemedText>
+                    <View style={styles.streakRow}>
+                      <Ionicons name="flame" size={13} color="#f97316" />
+                      <ThemedText type="small" themeColor="textSecondary">
+                        {profile.current_streak}d streak
+                      </ThemedText>
+                    </View>
+                  </>
                 )}
               </View>
             )}
@@ -163,22 +165,28 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.four,
+    paddingTop: TabBarWebInset,
     paddingBottom: BottomTabInset + Spacing.four,
   },
   header: {
-    paddingTop: Spacing.four,
+    paddingTop: Spacing.five,
     paddingBottom: Spacing.three,
-    gap: Spacing.two,
+    gap: Spacing.one,
+  },
+  greeting: {
+    fontSize: 28,
+    fontWeight: '700',
+    lineHeight: 34,
   },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
   },
-  statBadge: {
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
-    borderRadius: 99,
+  streakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   section: {
     paddingTop: Spacing.four,

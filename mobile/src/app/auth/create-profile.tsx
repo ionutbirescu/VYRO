@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -9,6 +9,14 @@ import {
   TextInput,
   View,
 } from 'react-native';
+
+function showAlert(title: string, message?: string) {
+  if (Platform.OS === 'web') {
+    window.alert(message ? `${title}\n${message}` : title);
+  } else {
+    Alert.alert(title, message);
+  }
+}
 
 import { api } from '@/api/client';
 import { useAuth } from '@/contexts/auth';
@@ -30,15 +38,15 @@ export default function CreateProfileScreen() {
 
   async function handleCreate() {
     if (!username || !displayName) {
-      Alert.alert('Fill in all fields');
+      showAlert('Fill in all fields');
       return;
     }
     if (!/^[a-z0-9_.]{3,32}$/.test(username)) {
-      Alert.alert('Invalid username', 'Lowercase letters, digits, _ and . only; 3-32 characters.');
+      showAlert('Invalid username', 'Lowercase letters, digits, _ and . only; 3-32 characters.');
       return;
     }
     if (!confirmsAdult) {
-      Alert.alert('Age confirmation required', 'You must be 18 or older to use VYRO.');
+      showAlert('Age confirmation required', 'You must be 18 or older to use VYRO.');
       return;
     }
 
@@ -56,13 +64,13 @@ export default function CreateProfileScreen() {
       if (error) {
         const detail =
           typeof error === 'object' && 'detail' in error ? String(error.detail) : 'Unknown error';
-        Alert.alert('Could not create profile', detail.includes('taken') ? 'Username is already taken.' : detail);
+        showAlert('Could not create profile', detail.includes('taken') ? 'Username is already taken.' : detail);
         return;
       }
       await refreshProfile();
       // AuthGuard redirects to / once profile is ready.
     } catch (e: unknown) {
-      Alert.alert('Error', e instanceof Error ? e.message : 'Something went wrong.');
+      showAlert('Error', e instanceof Error ? e.message : 'Something went wrong.');
     } finally {
       setLoading(false);
     }
@@ -72,7 +80,7 @@ export default function CreateProfileScreen() {
     <KeyboardAvoidingView
       style={[styles.root, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <ThemedText type="subtitle" style={styles.heading}>Set up your profile</ThemedText>
         <ThemedText themeColor="textSecondary" style={styles.sub}>
           This takes 30 seconds and you only do it once.
@@ -80,7 +88,7 @@ export default function CreateProfileScreen() {
 
         <ThemedText type="smallBold" style={styles.label}>Username</ThemedText>
         <TextInput
-          style={[styles.input, { backgroundColor: colors.backgroundElement, color: colors.text }]}
+          style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.backgroundSelected }]}
           placeholder="e.g. stefan.rares"
           placeholderTextColor={colors.textSecondary}
           value={username}
@@ -95,7 +103,7 @@ export default function CreateProfileScreen() {
 
         <ThemedText type="smallBold" style={styles.label}>Display name</ThemedText>
         <TextInput
-          style={[styles.input, { backgroundColor: colors.backgroundElement, color: colors.text }]}
+          style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.backgroundSelected }]}
           placeholder="How others see you"
           placeholderTextColor={colors.textSecondary}
           value={displayName}
@@ -104,7 +112,7 @@ export default function CreateProfileScreen() {
         />
 
         <ThemedText type="smallBold" style={styles.label}>Timezone</ThemedText>
-        <View style={[styles.readOnly, { backgroundColor: colors.backgroundElement }]}>
+        <View style={[styles.readOnly, { backgroundColor: colors.background, borderColor: colors.backgroundSelected }]}>
           <ThemedText themeColor="textSecondary">{DETECTED_TIMEZONE}</ThemedText>
         </View>
 
@@ -125,11 +133,11 @@ export default function CreateProfileScreen() {
         </Pressable>
 
         <Pressable
-          style={[styles.button, { backgroundColor: colors.text, opacity: loading ? 0.6 : 1 }]}
+          style={[styles.button, { opacity: loading ? 0.6 : 1 }]}
           onPress={handleCreate}
           disabled={loading}>
-          <ThemedText style={{ color: colors.background, fontWeight: '600' }}>
-            {loading ? 'Creating…' : "Let’s go"}
+          <ThemedText style={styles.buttonText}>
+            {loading ? 'Creating…' : "Let's go"}
           </ThemedText>
         </Pressable>
 
@@ -143,7 +151,12 @@ export default function CreateProfileScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  scroll: { flexGrow: 1, padding: Spacing.four, paddingTop: Spacing.six },
+  scroll: {
+    flexGrow: 1,
+    padding: Spacing.four,
+    paddingTop: Spacing.five,
+    alignItems: 'center',
+  },
   heading: { marginBottom: Spacing.one },
   sub: { marginBottom: Spacing.four },
   label: { marginBottom: Spacing.one, marginTop: Spacing.three },
@@ -152,17 +165,25 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: Spacing.three,
     fontSize: 16,
+    borderWidth: 1,
+    width: '100%',
+    maxWidth: 440,
   },
   readOnly: {
     borderRadius: 12,
     padding: Spacing.three,
+    borderWidth: 1,
+    width: '100%',
+    maxWidth: 440,
   },
-  divider: { height: 1, marginVertical: Spacing.four },
+  divider: { height: 1, marginVertical: Spacing.three, width: '100%', maxWidth: 440 },
   checkRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: Spacing.two,
     marginBottom: Spacing.three,
+    width: '100%',
+    maxWidth: 440,
   },
   checkbox: {
     width: 20,
@@ -174,11 +195,15 @@ const styles = StyleSheet.create({
   },
   checkLabel: { flex: 1 },
   button: {
-    borderRadius: 12,
+    borderRadius: 14,
     padding: Spacing.three,
     alignItems: 'center',
+    backgroundColor: '#007AFF',
     marginTop: Spacing.two,
+    width: '100%',
+    maxWidth: 440,
   },
+  buttonText: { color: '#FFFFFF', fontWeight: '600', fontSize: 16 },
   signOutLink: {
     alignItems: 'center',
     marginTop: Spacing.three,

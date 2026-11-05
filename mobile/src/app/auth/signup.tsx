@@ -37,7 +37,6 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       await signUp(email.trim(), password);
-      // AuthGuard redirects to /auth/create-profile because profile doesn't exist yet.
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Sign-up failed';
       Alert.alert('Sign-up failed', friendlyError(message));
@@ -50,59 +49,71 @@ export default function SignupScreen() {
     <KeyboardAvoidingView
       style={[styles.root, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <ThemedText type="title" style={styles.logo}>VYRO</ThemedText>
-        <ThemedText type="subtitle" style={styles.heading}>Create account</ThemedText>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
 
-        <TextInput
-          style={[styles.input, { backgroundColor: colors.backgroundElement, color: colors.text }]}
-          placeholder="Email"
-          placeholderTextColor={colors.textSecondary}
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          autoComplete="email"
-          textContentType="emailAddress"
-        />
-        <TextInput
-          style={[styles.input, { backgroundColor: colors.backgroundElement, color: colors.text }]}
-          placeholder="Password"
-          placeholderTextColor={colors.textSecondary}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoComplete="new-password"
-          textContentType="newPassword"
-        />
-        <TextInput
-          style={[styles.input, { backgroundColor: colors.backgroundElement, color: colors.text }]}
-          placeholder="Confirm password"
-          placeholderTextColor={colors.textSecondary}
-          value={confirm}
-          onChangeText={setConfirm}
-          secureTextEntry
-          autoComplete="new-password"
-          textContentType="newPassword"
-          onSubmitEditing={handleSignup}
-          returnKeyType="done"
-        />
-
-        <Pressable
-          style={[styles.button, { backgroundColor: colors.text, opacity: loading ? 0.6 : 1 }]}
-          onPress={handleSignup}
-          disabled={loading}>
-          <ThemedText style={{ color: colors.background, fontWeight: '600' }}>
-            {loading ? 'Creating account…' : 'Sign up'}
+        <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
+          <ThemedText type="title" style={styles.logo}>VYRO</ThemedText>
+          <ThemedText type="subtitle" style={styles.heading}>Create account</ThemedText>
+          <ThemedText themeColor="textSecondary" style={styles.sub}>
+            Start your first challenge today.
           </ThemedText>
-        </Pressable>
 
-        <View style={styles.footer}>
-          <ThemedText type="small" themeColor="textSecondary">Already have an account? </ThemedText>
-          <Link href="/auth/login">
-            <ThemedText type="linkPrimary">Sign in</ThemedText>
-          </Link>
+          <View style={styles.fields}>
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.backgroundSelected }]}
+              placeholder="Email"
+              placeholderTextColor={colors.textSecondary}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoComplete="email"
+              textContentType="emailAddress"
+            />
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.backgroundSelected }]}
+              placeholder="Password"
+              placeholderTextColor={colors.textSecondary}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoComplete="new-password"
+              textContentType="newPassword"
+            />
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.backgroundSelected }]}
+              placeholder="Confirm password"
+              placeholderTextColor={colors.textSecondary}
+              value={confirm}
+              onChangeText={setConfirm}
+              secureTextEntry
+              autoComplete="new-password"
+              textContentType="newPassword"
+              onSubmitEditing={handleSignup}
+              returnKeyType="done"
+            />
+          </View>
+
+          <Pressable
+            style={[styles.button, { opacity: loading ? 0.6 : 1 }]}
+            onPress={handleSignup}
+            disabled={loading}>
+            <ThemedText style={styles.buttonText}>
+              {loading ? 'Creating account…' : 'Sign up'}
+            </ThemedText>
+          </Pressable>
+
+          <View style={styles.footer}>
+            <ThemedText type="small" themeColor="textSecondary">Already have an account?{' '}</ThemedText>
+            <Link href="/auth/login">
+              <ThemedText type="linkPrimary">Sign in</ThemedText>
+            </Link>
+          </View>
         </View>
+
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -117,24 +128,39 @@ function friendlyError(message: string): string {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: Spacing.four },
-  logo: { textAlign: 'center', marginBottom: Spacing.two },
-  heading: { marginBottom: Spacing.four },
+  scroll: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: Spacing.four,
+    alignItems: 'center',
+  },
+  card: {
+    width: '100%',
+    maxWidth: 440,
+    borderRadius: 24,
+    padding: Spacing.four,
+    gap: Spacing.three,
+  },
+  logo: { textAlign: 'center', letterSpacing: 4 },
+  heading: { textAlign: 'center' },
+  sub: { textAlign: 'center', marginTop: -Spacing.two },
+  fields: { gap: Spacing.two },
   input: {
     borderRadius: 12,
     padding: Spacing.three,
-    marginBottom: Spacing.two,
     fontSize: 16,
+    borderWidth: 1,
   },
   button: {
-    borderRadius: 12,
+    borderRadius: 14,
     padding: Spacing.three,
     alignItems: 'center',
-    marginTop: Spacing.two,
+    backgroundColor: '#007AFF',
+    marginTop: Spacing.one,
   },
+  buttonText: { color: '#FFFFFF', fontWeight: '600', fontSize: 16 },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: Spacing.three,
   },
 });

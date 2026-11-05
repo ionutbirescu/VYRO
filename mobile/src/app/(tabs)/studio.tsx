@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -15,30 +16,31 @@ import { api } from '@/api/client';
 import type { Schemas } from '@/api/client';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { AccentColor, BottomTabInset, MaxContentWidth, Spacing, TabBarWebInset } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
 import { useTheme } from '@/hooks/use-theme';
 
-const CATEGORIES = [
-  { key: undefined, label: 'Any' },
-  { key: 'fitness', label: '🏋️' },
-  { key: 'nutrition', label: '🥗' },
-  { key: 'mindfulness', label: '🧘' },
-  { key: 'sleep', label: '😴' },
-  { key: 'learning', label: '📚' },
-  { key: 'reading', label: '📖' },
-  { key: 'creativity', label: '🎨' },
-  { key: 'productivity', label: '✅' },
-  { key: 'social', label: '👥' },
-  { key: 'outdoors', label: '🌿' },
-  { key: 'sustainability', label: '♻️' },
-  { key: 'finance', label: '💰' },
-  { key: 'digital_detox', label: '📵' },
-] as const;
+type StudioCategoryKey = 'fitness' | 'nutrition' | 'mindfulness' | 'sleep' | 'learning' | 'reading' | 'creativity' | 'productivity' | 'social' | 'outdoors' | 'sustainability' | 'finance' | 'digital_detox' | undefined;
+
+const CATEGORIES: { key: StudioCategoryKey; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { key: undefined, label: 'Any', icon: 'grid-outline' },
+  { key: 'fitness', label: 'Fitness', icon: 'barbell-outline' },
+  { key: 'nutrition', label: 'Nutrition', icon: 'nutrition-outline' },
+  { key: 'mindfulness', label: 'Mindfulness', icon: 'body-outline' },
+  { key: 'sleep', label: 'Sleep', icon: 'bed-outline' },
+  { key: 'learning', label: 'Learning', icon: 'school-outline' },
+  { key: 'reading', label: 'Reading', icon: 'book-outline' },
+  { key: 'creativity', label: 'Creativity', icon: 'color-palette-outline' },
+  { key: 'productivity', label: 'Productivity', icon: 'checkmark-circle-outline' },
+  { key: 'social', label: 'Social', icon: 'people-outline' },
+  { key: 'outdoors', label: 'Outdoors', icon: 'leaf-outline' },
+  { key: 'sustainability', label: 'Sustainability', icon: 'refresh-circle-outline' },
+  { key: 'finance', label: 'Finance', icon: 'wallet-outline' },
+  { key: 'digital_detox', label: 'Detox', icon: 'eye-off-outline' },
+];
 
 const DURATIONS = [1, 7, 14, 30] as const;
 
-type CategoryKey = (typeof CATEGORIES)[number]['key'];
 
 export default function StudioScreen() {
   const { state } = useAuth();
@@ -47,7 +49,7 @@ export default function StudioScreen() {
 
   const [quota, setQuota] = useState<Schemas['AiQuota'] | null>(null);
   const [goal, setGoal] = useState('');
-  const [category, setCategory] = useState<CategoryKey>(undefined);
+  const [category, setCategory] = useState<StudioCategoryKey>(undefined);
   const [duration, setDuration] = useState<1 | 7 | 14 | 30>(7);
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<Schemas['GeneratedChallenge'] | null>(null);
@@ -128,11 +130,16 @@ export default function StudioScreen() {
           {/* Quota */}
           {quota && (
             <View style={[styles.quotaBar, { backgroundColor: colors.backgroundElement }]}>
-              <ThemedText type="small" themeColor="textSecondary">
-                {quota.daily_limit === null
-                  ? '⚡ Unlimited generations (VYRO+)'
-                  : `Generations today: ${quota.used_today} / ${quota.daily_limit}`}
-              </ThemedText>
+              {quota.daily_limit === null ? (
+                <View style={styles.quotaRow}>
+                  <Ionicons name="flash" size={13} color="#f59e0b" />
+                  <ThemedText type="small" themeColor="textSecondary">Unlimited generations (VYRO+)</ThemedText>
+                </View>
+              ) : (
+                <ThemedText type="small" themeColor="textSecondary">
+                  {`Generations today: ${quota.used_today} / ${quota.daily_limit}`}
+                </ThemedText>
+              )}
             </View>
           )}
 
@@ -158,9 +165,19 @@ export default function StudioScreen() {
                   return (
                     <Pressable
                       key={String(cat.key)}
-                      style={[styles.pill, { backgroundColor: active ? colors.text : colors.backgroundElement }]}
+                      style={[
+                        styles.pill,
+                        active
+                          ? { backgroundColor: AccentColor }
+                          : { backgroundColor: colors.backgroundElement },
+                      ]}
                       onPress={() => setCategory(cat.key)}>
-                      <ThemedText type="small" style={{ color: active ? colors.background : colors.text }}>
+                      <Ionicons
+                        name={cat.icon}
+                        size={12}
+                        color={active ? '#fff' : colors.textSecondary}
+                      />
+                      <ThemedText type="small" style={{ color: active ? '#fff' : colors.text }}>
                         {cat.label}
                       </ThemedText>
                     </Pressable>
@@ -192,14 +209,19 @@ export default function StudioScreen() {
               )}
 
               <Pressable
-                style={[styles.generateBtn, { backgroundColor: colors.text, opacity: (generating || !!quotaExhausted) ? 0.5 : 1 }]}
+                style={[styles.generateBtn, { opacity: (generating || !!quotaExhausted) ? 0.5 : 1 }]}
                 onPress={handleGenerate}
                 disabled={generating || !!quotaExhausted}>
                 {generating
-                  ? <ActivityIndicator color={colors.background} />
-                  : <ThemedText style={{ color: colors.background, fontWeight: '600' }}>
-                      ✨ Generate challenge
-                    </ThemedText>
+                  ? <ActivityIndicator color="#fff" />
+                  : (
+                    <View style={styles.generateBtnContent}>
+                      <Ionicons name="sparkles" size={16} color="#fff" />
+                      <ThemedText style={{ color: '#fff', fontWeight: '600' }}>
+                        Generate challenge
+                      </ThemedText>
+                    </View>
+                  )
                 }
               </Pressable>
             </View>
@@ -252,7 +274,11 @@ export default function StudioScreen() {
                 <View style={styles.stars}>
                   {[1, 2, 3, 4, 5].map((s) => (
                     <Pressable key={s} onPress={() => submitRating(s)}>
-                      <ThemedText style={[styles.star, { opacity: s <= rating ? 1 : 0.3 }]}>⭐</ThemedText>
+                      <Ionicons
+                        name={s <= rating ? 'star' : 'star-outline'}
+                        size={22}
+                        color={s <= rating ? '#f59e0b' : '#94a3b8'}
+                      />
                     </Pressable>
                   ))}
                 </View>
@@ -296,19 +322,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingBottom: BottomTabInset + Spacing.four,
     gap: Spacing.three,
-    paddingTop: Spacing.four,
+    paddingTop: TabBarWebInset + Spacing.four,
   },
   heading: { marginBottom: -Spacing.two },
   quotaBar: { borderRadius: 12, padding: Spacing.two + 2, alignItems: 'center' },
+  quotaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   form: { gap: Spacing.three },
   label: { marginBottom: -Spacing.two },
   input: { borderRadius: 12, padding: Spacing.three, fontSize: 16, minHeight: 80, textAlignVertical: 'top' },
   pills: { gap: Spacing.one, paddingVertical: Spacing.one },
-  pill: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.one + 2, borderRadius: 99 },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one + 2,
+    borderRadius: 99,
+  },
   durationRow: { flexDirection: 'row', gap: Spacing.two },
   durationBtn: { flex: 1, padding: Spacing.two, borderRadius: 12, alignItems: 'center' },
   diffNote: { marginTop: -Spacing.two },
-  generateBtn: { borderRadius: 12, padding: Spacing.three, alignItems: 'center' },
+  generateBtn: {
+    borderRadius: 12,
+    padding: Spacing.three,
+    alignItems: 'center',
+    backgroundColor: AccentColor,
+  },
+  generateBtnContent: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   preview: { gap: Spacing.three },
   draftCard: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
   draftLabel: { letterSpacing: 0.8 },
@@ -319,6 +359,5 @@ const styles = StyleSheet.create({
   taskText: { flex: 1, gap: 2 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   stars: { flexDirection: 'row', gap: Spacing.one },
-  star: { fontSize: 24 },
   retryBtn: { borderRadius: 12, padding: Spacing.three, alignItems: 'center', borderWidth: 1 },
 });

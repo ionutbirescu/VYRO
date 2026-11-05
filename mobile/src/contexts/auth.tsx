@@ -46,10 +46,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Dev mode: skip Firebase and go straight into the app with mock data.
     if (DEV_UID) {
       setTokenProvider(async () => `dev:${DEV_UID}`);
-      api.GET('/v1/me').then(({ data }) => {
-        if (data) setState({ status: 'ready', user: null as unknown as FirebaseUser, profile: data });
-        else setState({ status: 'unauthenticated' });
-      });
+      const timeout = setTimeout(() => setState({ status: 'unauthenticated' }), 4000);
+      api.GET('/v1/me').then(
+        ({ data, error }) => {
+          clearTimeout(timeout);
+          if (data) {
+            setState({ status: 'ready', user: null as unknown as FirebaseUser, profile: data });
+          } else {
+            const detail = error && typeof error === 'object' && 'detail' in error ? (error as { detail: unknown }).detail : null;
+            if (detail === 'registration_required') {
+              setState({ status: 'needs_profile', user: null as unknown as FirebaseUser });
+            } else {
+              setState({ status: 'unauthenticated' });
+            }
+          }
+        },
+        () => { clearTimeout(timeout); setState({ status: 'unauthenticated' }); },
+      );
       return;
     }
 

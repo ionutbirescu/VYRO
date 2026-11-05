@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://vyro:vyro@localhost:5432/vyro"
     auth_mode: AuthMode = AuthMode.DEV
     firebase_project_id: str | None = None
-    cors_origins: list[str] = ["http://localhost:8081"]
+    cors_origins: list[str] = ["http://localhost:8081", "http://localhost:8082"]
     # Cloud Storage bucket for proof photos. Unset locally: the API stores them itself.
     # Not validated here: the migration job shares these settings and has no bucket.
     proof_bucket: str | None = None
