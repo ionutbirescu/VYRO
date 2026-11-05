@@ -31,6 +31,7 @@ Settings are environment variables with the `VYRO_` prefix. They are read from `
 | `VYRO_AUTH_MODE` | `dev` | `dev` accepts `dev:<uid>` tokens; `firebase` verifies Firebase ID tokens. `prod` refuses `dev`. |
 | `VYRO_FIREBASE_PROJECT_ID` | none | Required for `firebase` mode |
 | `VYRO_CORS_ORIGINS` | `["http://localhost:8081"]` | JSON list; only matters for Expo web |
+| `VYRO_PROOF_BUCKET` | none | Cloud Storage bucket for proof photos. Unset, the API stores them in `api/.uploads` and serves them at `/dev/uploads`, so the proof flow works locally. Cloud Build sets it in production. |
 
 ## Auth
 

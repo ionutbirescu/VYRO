@@ -16,6 +16,7 @@ dependencies = [
     "psycopg[binary]>=3.2",
     "alembic>=1.14",
     "firebase-admin>=6.6",
+    "google-cloud-storage>=2.18",
     # IANA time zone data for zoneinfo; Windows and slim images ship none.
     "tzdata>=2024.2",
 ]

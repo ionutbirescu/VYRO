@@ -2924,6 +2924,7 @@
           },
           "currency": {
             "type": "string",
+            "const": "USD",
             "title": "Currency"
           },
           "sandbox": {
@@ -3851,6 +3852,7 @@
           },
           "currency": {
             "type": "string",
+            "const": "USD",
             "title": "Currency"
           },
           "owned": {

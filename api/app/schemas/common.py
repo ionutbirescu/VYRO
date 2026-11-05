@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
 
 class Schema(BaseModel):
@@ -32,5 +32,8 @@ Level = Annotated[int, Field(ge=1)]
 Difficulty = Annotated[int, Field(ge=1, le=5, description="1 = easy, 5 = extreme")]
 
 DurationDays = Literal[1, 7, 14, 30]
+
+# Query strings arrive as text, and a Literal of ints does not accept "7" for 7.
+DurationDaysQuery = Annotated[DurationDays, BeforeValidator(int)]
 
 Limit = Annotated[int, Field(ge=1, le=50)]
