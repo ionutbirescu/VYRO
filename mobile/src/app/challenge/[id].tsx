@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -114,12 +115,14 @@ export default function ChallengeScreen() {
             </ThemedText>
 
             <View style={styles.statsRow}>
+              <Ionicons name="star-outline" size={14} color="#f59e0b" />
               <ThemedText type="small" themeColor="textSecondary">
-                ⭐ {challenge.total_xp} XP
+                {challenge.total_xp.toLocaleString()} XP
               </ThemedText>
               <ThemedText type="small" themeColor="textSecondary">·</ThemedText>
+              <Ionicons name="people-outline" size={14} color="#94a3b8" />
               <ThemedText type="small" themeColor="textSecondary">
-                👥 {challenge.participant_count} joined
+                {challenge.participant_count.toLocaleString()} joined
               </ThemedText>
             </View>
           </View>
@@ -172,7 +175,10 @@ export default function ChallengeScreen() {
                   params: { challenge_id: challenge.id },
                 })
               }>
-              <ThemedText type="smallBold">🏆 Leaderboard</ThemedText>
+              <View style={styles.secondaryBtnContent}>
+                <Ionicons name="trophy-outline" size={15} color="#f59e0b" />
+                <ThemedText type="smallBold">Leaderboard</ThemedText>
+              </View>
             </Pressable>
             <Pressable
               style={[styles.secondaryBtn, { backgroundColor: colors.backgroundElement, flex: 1 }]}
@@ -182,7 +188,10 @@ export default function ChallengeScreen() {
                   params: { challenge_id: challenge.id },
                 })
               }>
-              <ThemedText type="smallBold">💬 Chat</ThemedText>
+              <View style={styles.secondaryBtnContent}>
+                <Ionicons name="chatbubble-outline" size={15} color="#94a3b8" />
+                <ThemedText type="smallBold">Chat</ThemedText>
+              </View>
             </Pressable>
           </View>
 
@@ -213,9 +222,15 @@ export default function ChallengeScreen() {
                         backgroundColor: done ? '#22c55e' : current ? diff.color : colors.backgroundSelected,
                       },
                     ]}>
-                      <ThemedText type="small" style={{ color: done || current ? '#fff' : colors.textSecondary }}>
-                        {done ? '✓' : `D${task.day_number}`}
-                      </ThemedText>
+                      {done
+                        ? <Ionicons name="checkmark" size={14} color="#fff" />
+                        : <ThemedText
+                            type="small"
+                            numberOfLines={1}
+                            style={{ color: current ? '#fff' : colors.textSecondary, fontSize: 12 }}>
+                            D{task.day_number}
+                          </ThemedText>
+                      }
                     </View>
                     <ThemedText type="smallBold" style={styles.taskTitle}>
                       {task.title}
@@ -242,9 +257,10 @@ export default function ChallengeScreen() {
                           },
                         })
                       }>
-                      <ThemedText type="smallBold" style={{ color: '#fff' }}>
-                        📸 Submit proof
-                      </ThemedText>
+                      <View style={styles.submitBtnContent}>
+                        <Ionicons name="camera-outline" size={15} color="#fff" />
+                        <ThemedText type="smallBold" style={{ color: '#fff' }}>Submit proof</ThemedText>
+                      </View>
                     </Pressable>
                   )}
                 </View>
@@ -284,14 +300,21 @@ const styles = StyleSheet.create({
   },
   secondaryActions: { flexDirection: 'row', gap: Spacing.two },
   secondaryBtn: { borderRadius: 12, padding: Spacing.three, alignItems: 'center' },
+  secondaryBtnContent: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   sectionTitle: { letterSpacing: 0.8, marginTop: Spacing.two },
   taskCard: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
   taskHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   dayBadge: {
-    width: 32, height: 32, borderRadius: 16,
-    alignItems: 'center', justifyContent: 'center',
+    minWidth: 32,
+    height: 32,
+    borderRadius: 99,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   taskTitle: { flex: 1 },
   taskInstructions: { lineHeight: 20, paddingLeft: 40 },
   submitBtn: { marginTop: Spacing.two, borderRadius: 10, padding: Spacing.two, alignItems: 'center', marginLeft: 40 },
+  submitBtnContent: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 });

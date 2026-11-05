@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,15 +7,15 @@ import { api } from '@/api/client';
 import type { Schemas } from '@/api/client';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing, TabBarWebInset } from '@/constants/theme';
+import { AccentColor, BottomTabInset, MaxContentWidth, Spacing, TabBarWebInset } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
 import { useTheme } from '@/hooks/use-theme';
 
-const PLUS_FEATURES = [
-  '🤖 Unlimited AI challenge generation',
-  '📊 Advanced analytics & insights',
-  '⚡ Priority proof verification',
-  '🏷️ Exclusive cosmetics access',
+const PLUS_FEATURES: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
+  { icon: 'sparkles-outline', text: 'Unlimited AI challenge generation' },
+  { icon: 'bar-chart-outline', text: 'Advanced analytics & insights' },
+  { icon: 'flash-outline', text: 'Priority proof verification' },
+  { icon: 'shirt-outline', text: 'Exclusive cosmetics access' },
 ];
 
 function formatPrice(cents: number, currency: string): string {
@@ -105,7 +106,10 @@ export default function ShopScreen() {
           {/* VYRO+ section */}
           {subProducts.length > 0 && (
             <View style={[styles.plusCard, { backgroundColor: isPlus ? '#1a1a2e' : '#0f172a' }]}>
-              <ThemedText type="subtitle" style={styles.plusTitle}>⚡ VYRO+</ThemedText>
+              <View style={styles.plusHeader}>
+                <Ionicons name="flash" size={22} color="#f59e0b" />
+                <ThemedText type="subtitle" style={styles.plusTitle}>VYRO+</ThemedText>
+              </View>
               {isPlus && entitlements?.plus_until ? (
                 <ThemedText type="small" style={{ color: '#f59e0b' }}>
                   Active until {new Date(entitlements.plus_until).toLocaleDateString()}
@@ -118,9 +122,12 @@ export default function ShopScreen() {
 
               <View style={styles.featureList}>
                 {PLUS_FEATURES.map((f) => (
-                  <ThemedText key={f} type="small" style={{ color: '#e2e8f0' }}>
-                    {f}
-                  </ThemedText>
+                  <View key={f.text} style={styles.featureRow}>
+                    <Ionicons name={f.icon} size={15} color={AccentColor} />
+                    <ThemedText type="small" style={{ color: '#e2e8f0' }}>
+                      {f.text}
+                    </ThemedText>
+                  </View>
                 ))}
               </View>
 
@@ -175,7 +182,9 @@ export default function ShopScreen() {
                           borderWidth: isEquipped ? 1.5 : 0,
                         },
                       ]}>
-                      <ThemedText style={styles.cosmeticIcon}>🎨</ThemedText>
+                      <View style={[styles.cosmeticIconWrap, { backgroundColor: isEquipped ? AccentColor + '22' : colors.backgroundSelected }]}>
+                        <Ionicons name="color-palette-outline" size={22} color={isEquipped ? AccentColor : colors.textSecondary} />
+                      </View>
                       <ThemedText type="smallBold" style={styles.cosmeticName} numberOfLines={2}>
                         {p.name}
                       </ThemedText>
@@ -256,8 +265,18 @@ const styles = StyleSheet.create({
     padding: Spacing.six,
     gap: Spacing.three,
   },
+  plusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
   plusTitle: { color: '#f8fafc' },
   featureList: { gap: Spacing.two },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
   plusBtn: {
     backgroundColor: '#f8fafc',
     borderRadius: 14,
@@ -278,7 +297,13 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     gap: Spacing.two,
   },
-  cosmeticIcon: { fontSize: 28 },
+  cosmeticIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   cosmeticName: { lineHeight: 18 },
   cosmeticBtn: {
     borderRadius: 10,

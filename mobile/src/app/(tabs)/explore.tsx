@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -17,27 +18,27 @@ import type { Schemas } from '@/api/client';
 import { ChallengeCard } from '@/components/challenge-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing, TabBarWebInset } from '@/constants/theme';
+import { AccentColor, BottomTabInset, MaxContentWidth, Spacing, TabBarWebInset } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-const CATEGORIES = [
-  { key: undefined, label: 'All' },
-  { key: 'fitness', label: '🏋️ Fitness' },
-  { key: 'nutrition', label: '🥗 Nutrition' },
-  { key: 'mindfulness', label: '🧘 Mindfulness' },
-  { key: 'sleep', label: '😴 Sleep' },
-  { key: 'learning', label: '📚 Learning' },
-  { key: 'reading', label: '📖 Reading' },
-  { key: 'creativity', label: '🎨 Creativity' },
-  { key: 'productivity', label: '✅ Productivity' },
-  { key: 'social', label: '👥 Social' },
-  { key: 'outdoors', label: '🌿 Outdoors' },
-  { key: 'sustainability', label: '♻️ Sustainability' },
-  { key: 'finance', label: '💰 Finance' },
-  { key: 'digital_detox', label: '📵 Digital Detox' },
-] as const;
+type CategoryKey = 'fitness' | 'nutrition' | 'mindfulness' | 'sleep' | 'learning' | 'reading' | 'creativity' | 'productivity' | 'social' | 'outdoors' | 'sustainability' | 'finance' | 'digital_detox' | undefined;
 
-type CategoryKey = (typeof CATEGORIES)[number]['key'];
+const CATEGORIES: { key: CategoryKey; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { key: undefined, label: 'All', icon: 'grid-outline' },
+  { key: 'fitness', label: 'Fitness', icon: 'barbell-outline' },
+  { key: 'nutrition', label: 'Nutrition', icon: 'nutrition-outline' },
+  { key: 'mindfulness', label: 'Mindfulness', icon: 'body-outline' },
+  { key: 'sleep', label: 'Sleep', icon: 'bed-outline' },
+  { key: 'learning', label: 'Learning', icon: 'school-outline' },
+  { key: 'reading', label: 'Reading', icon: 'book-outline' },
+  { key: 'creativity', label: 'Creativity', icon: 'color-palette-outline' },
+  { key: 'productivity', label: 'Productivity', icon: 'checkmark-circle-outline' },
+  { key: 'social', label: 'Social', icon: 'people-outline' },
+  { key: 'outdoors', label: 'Outdoors', icon: 'leaf-outline' },
+  { key: 'sustainability', label: 'Sustainability', icon: 'refresh-circle-outline' },
+  { key: 'finance', label: 'Finance', icon: 'wallet-outline' },
+  { key: 'digital_detox', label: 'Digital Detox', icon: 'eye-off-outline' },
+];
 
 export default function ExploreScreen() {
   const colors = useTheme();
@@ -113,21 +114,24 @@ export default function ExploreScreen() {
           scrollEventThrottle={200}>
 
           {/* Search bar */}
-          <TextInput
-            style={[
-              styles.searchBar,
-              { backgroundColor: colors.backgroundElement, color: colors.text },
-            ]}
-            placeholder="Search challenges…"
-            placeholderTextColor={colors.textSecondary}
-            value={query}
-            onChangeText={setQuery}
-            returnKeyType="search"
-            clearButtonMode="while-editing"
-          />
+          <View style={[styles.searchWrap, { backgroundColor: colors.backgroundElement }]}>
+            <Ionicons name="search-outline" size={18} color={colors.textSecondary} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.text }]}
+              placeholder="Search challenges…"
+              placeholderTextColor={colors.textSecondary}
+              value={query}
+              onChangeText={setQuery}
+              returnKeyType="search"
+              clearButtonMode="while-editing"
+            />
+          </View>
 
           {/* Category pills */}
-          <View style={styles.pills}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.pills}>
             {CATEGORIES.map((cat) => {
               const active = cat.key === category;
               return (
@@ -135,18 +139,25 @@ export default function ExploreScreen() {
                   key={cat.label}
                   style={[
                     styles.pill,
-                    { backgroundColor: active ? colors.text : colors.backgroundElement },
+                    active
+                      ? { backgroundColor: AccentColor }
+                      : { backgroundColor: colors.backgroundElement },
                   ]}
                   onPress={() => setCategory(cat.key)}>
+                  <Ionicons
+                    name={cat.icon}
+                    size={13}
+                    color={active ? '#fff' : colors.textSecondary}
+                  />
                   <ThemedText
                     type="small"
-                    style={{ color: active ? colors.background : colors.text }}>
+                    style={{ color: active ? '#fff' : colors.text }}>
                     {cat.label}
                   </ThemedText>
                 </Pressable>
               );
             })}
-          </View>
+          </ScrollView>
 
           {loading && (
             <ActivityIndicator style={styles.spinner} color={colors.textSecondary} />
@@ -192,22 +203,31 @@ const styles = StyleSheet.create({
     paddingTop: TabBarWebInset,
     paddingBottom: BottomTabInset + Spacing.four,
   },
-  searchBar: {
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
     borderRadius: 12,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two + 2,
-    fontSize: 16,
     marginTop: Spacing.six,
     marginBottom: Spacing.two,
   },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    outlineStyle: 'none',
+  } as object,
   pills: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: Spacing.one,
     paddingVertical: Spacing.two,
     paddingBottom: Spacing.three,
   },
   pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.one + 2,
     borderRadius: 99,

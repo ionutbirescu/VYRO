@@ -1,4 +1,5 @@
 'use no memo';
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
@@ -13,23 +14,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { ThemedText } from '@/components/themed-text';
 
-const CATEGORY_EMOJI: Record<string, string> = {
-  fitness: '🏋️',
-  nutrition: '🥗',
-  mindfulness: '🧘',
-  sleep: '😴',
-  learning: '📚',
-  reading: '📖',
-  creativity: '🎨',
-  productivity: '✅',
-  social: '👥',
-  outdoors: '🌿',
-  sustainability: '♻️',
-  finance: '💰',
-  digital_detox: '📵',
-};
-
-const DIFFICULTY_LABEL: Record<number, { label: string; color: string }> = {
+const DIFFICULTY: Record<number, { label: string; color: string }> = {
   1: { label: 'Easy', color: '#22c55e' },
   2: { label: 'Medium', color: '#3b82f6' },
   3: { label: 'Hard', color: '#f59e0b' },
@@ -52,7 +37,6 @@ type FullProps = {
 
 type ChallengeCardProps = CompactProps | FullProps;
 
-// Shared press-scale + fade-in wrapper
 function AnimCard({
   children,
   onPress,
@@ -97,8 +81,7 @@ function AnimCard({
 export function ChallengeCard(props: ChallengeCardProps) {
   const { challenge, onPress } = props;
   const colors = useTheme();
-  const diff = DIFFICULTY_LABEL[challenge.difficulty] ?? DIFFICULTY_LABEL[1];
-  const emoji = CATEGORY_EMOJI[challenge.category] ?? '🎯';
+  const diff = DIFFICULTY[challenge.difficulty] ?? DIFFICULTY[1];
 
   if (props.variant === 'compact') {
     const progress = props.progress;
@@ -106,28 +89,39 @@ export function ChallengeCard(props: ChallengeCardProps) {
 
     return (
       <AnimCard onPress={onPress} style={shadowStyle}>
-        <View style={[styles.compact, { backgroundColor: colors.backgroundElement }]}>
-          <View style={[styles.accentBarCompact, { backgroundColor: diff.color }]} />
-          <ThemedText style={styles.compactEmoji}>{emoji}</ThemedText>
+        <View style={[
+          styles.compact,
+          {
+            backgroundColor: colors.backgroundElement,
+            borderColor: colors.backgroundSelected,
+            borderLeftColor: diff.color,
+          },
+        ]}>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.compactCategory}>
+            {challenge.category.replace('_', ' ')}
+          </ThemedText>
           <ThemedText type="smallBold" numberOfLines={2} style={styles.compactTitle}>
             {challenge.title}
           </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {challenge.duration_days}d
-          </ThemedText>
-          {progress && (
-            <View style={[styles.progressTrack, { backgroundColor: colors.backgroundSelected }]}>
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: `${pct * 100}%` as `${number}%`, backgroundColor: diff.color },
-                ]}
-              />
-            </View>
+          {progress ? (
+            <>
+              <View style={[styles.progressTrack, { backgroundColor: colors.backgroundSelected }]}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${pct * 100}%` as `${number}%`, backgroundColor: diff.color },
+                  ]}
+                />
+              </View>
+              <ThemedText type="small" themeColor="textSecondary">
+                Day {progress.completed + 1} of {progress.total}
+              </ThemedText>
+            </>
+          ) : (
+            <ThemedText type="small" themeColor="textSecondary">
+              {challenge.duration_days === 1 ? '1 day' : `${challenge.duration_days} days`}
+            </ThemedText>
           )}
-          <ThemedText type="small" style={{ color: diff.color }}>
-            {progress ? `Day ${progress.completed + 1}/${progress.total}` : diff.label}
-          </ThemedText>
         </View>
       </AnimCard>
     );
@@ -135,46 +129,54 @@ export function ChallengeCard(props: ChallengeCardProps) {
 
   return (
     <AnimCard onPress={onPress} style={shadowStyle}>
-      <View style={[styles.full, { backgroundColor: colors.backgroundElement }]}>
-        {/* Difficulty accent bar */}
-        <View style={[styles.accentBar, { backgroundColor: diff.color }]} />
-
+      <View style={[
+        styles.full,
+        {
+          backgroundColor: colors.backgroundElement,
+          borderColor: colors.backgroundSelected,
+        },
+      ]}>
         <View style={styles.body}>
-          {/* Category + difficulty */}
-          <View style={styles.badgeRow}>
+          <View style={styles.topRow}>
             <ThemedText type="small" themeColor="textSecondary">
-              {emoji} {challenge.category.replace('_', ' ')}
+              {challenge.category.replace('_', ' ')}
             </ThemedText>
-            <View style={[styles.diffBadge, { backgroundColor: diff.color + '25' }]}>
-              <ThemedText type="small" style={{ color: diff.color, fontWeight: '600' }}>
-                {diff.label}
-              </ThemedText>
-            </View>
+            <ThemedText type="small" style={{ color: diff.color }}>
+              {diff.label}
+            </ThemedText>
           </View>
 
-          {/* Title */}
           <ThemedText style={styles.fullTitle} numberOfLines={2}>
             {challenge.title}
           </ThemedText>
 
-          {/* Description */}
-          <ThemedText type="small" themeColor="textSecondary" numberOfLines={2} style={styles.description}>
-            {challenge.description}
-          </ThemedText>
+          {challenge.description ? (
+            <ThemedText type="small" themeColor="textSecondary" numberOfLines={2} style={styles.description}>
+              {challenge.description}
+            </ThemedText>
+          ) : null}
 
-          {/* Footer */}
-          <View style={styles.fullFooter}>
-            <ThemedText type="small" themeColor="textSecondary">
-              📅 {challenge.duration_days === 1 ? '1 day' : `${challenge.duration_days} days`}
-            </ThemedText>
+          <View style={styles.footer}>
+            <View style={styles.footerItem}>
+              <Ionicons name="calendar-outline" size={12} color={colors.textSecondary} />
+              <ThemedText type="small" themeColor="textSecondary">
+                {challenge.duration_days === 1 ? '1 day' : `${challenge.duration_days} days`}
+              </ThemedText>
+            </View>
             <ThemedText type="small" themeColor="textSecondary">·</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              ⭐ {challenge.total_xp} XP
-            </ThemedText>
+            <View style={styles.footerItem}>
+              <Ionicons name="star-outline" size={12} color={colors.textSecondary} />
+              <ThemedText type="small" themeColor="textSecondary">
+                {challenge.total_xp.toLocaleString()} XP
+              </ThemedText>
+            </View>
             <ThemedText type="small" themeColor="textSecondary">·</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              👥 {challenge.participant_count}
-            </ThemedText>
+            <View style={styles.footerItem}>
+              <Ionicons name="people-outline" size={12} color={colors.textSecondary} />
+              <ThemedText type="small" themeColor="textSecondary">
+                {challenge.participant_count.toLocaleString()}
+              </ThemedText>
+            </View>
           </View>
         </View>
       </View>
@@ -185,70 +187,68 @@ export function ChallengeCard(props: ChallengeCardProps) {
 const shadowStyle = Platform.select({
   ios: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
   default: {},
 });
 
 const styles = StyleSheet.create({
   compact: {
-    width: 164,
-    borderRadius: 18,
-    overflow: 'hidden',
-    paddingHorizontal: Spacing.three,
-    paddingBottom: Spacing.three,
-    gap: Spacing.one,
+    width: 180,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderLeftWidth: 3,
+    padding: Spacing.three,
+    gap: Spacing.two,
   },
-  accentBarCompact: {
-    height: 3,
-    marginHorizontal: -Spacing.three,
-    marginBottom: Spacing.two,
+  compactCategory: {
+    textTransform: 'capitalize',
+    fontSize: 12,
   },
-  compactEmoji: { fontSize: 28 },
-  compactTitle: { marginTop: Spacing.one },
+  compactTitle: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
   progressTrack: {
-    height: 4,
+    height: 3,
     borderRadius: 2,
-    marginTop: Spacing.one,
     overflow: 'hidden',
   },
   progressFill: { height: '100%', borderRadius: 2 },
 
   full: {
-    borderRadius: 18,
+    borderRadius: 12,
+    borderWidth: 1,
     overflow: 'hidden',
-  },
-  accentBar: {
-    height: 4,
   },
   body: {
     padding: Spacing.three,
     gap: Spacing.two,
   },
-  badgeRow: {
+  topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  diffBadge: {
-    paddingHorizontal: Spacing.two,
-    paddingVertical: 3,
-    borderRadius: 99,
-  },
   fullTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
     lineHeight: 22,
   },
   description: {
     lineHeight: 19,
   },
-  fullFooter: {
+  footer: {
     flexDirection: 'row',
     gap: Spacing.two,
     alignItems: 'center',
-    paddingTop: Spacing.one,
+    marginTop: Spacing.one,
+  },
+  footerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
 });

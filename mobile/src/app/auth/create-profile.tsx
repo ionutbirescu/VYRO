@@ -10,6 +10,14 @@ import {
   View,
 } from 'react-native';
 
+function showAlert(title: string, message?: string) {
+  if (Platform.OS === 'web') {
+    window.alert(message ? `${title}\n${message}` : title);
+  } else {
+    Alert.alert(title, message);
+  }
+}
+
 import { api } from '@/api/client';
 import { useAuth } from '@/contexts/auth';
 import { Spacing } from '@/constants/theme';
@@ -30,15 +38,15 @@ export default function CreateProfileScreen() {
 
   async function handleCreate() {
     if (!username || !displayName) {
-      Alert.alert('Fill in all fields');
+      showAlert('Fill in all fields');
       return;
     }
     if (!/^[a-z0-9_.]{3,32}$/.test(username)) {
-      Alert.alert('Invalid username', 'Lowercase letters, digits, _ and . only; 3-32 characters.');
+      showAlert('Invalid username', 'Lowercase letters, digits, _ and . only; 3-32 characters.');
       return;
     }
     if (!confirmsAdult) {
-      Alert.alert('Age confirmation required', 'You must be 18 or older to use VYRO.');
+      showAlert('Age confirmation required', 'You must be 18 or older to use VYRO.');
       return;
     }
 
@@ -56,13 +64,13 @@ export default function CreateProfileScreen() {
       if (error) {
         const detail =
           typeof error === 'object' && 'detail' in error ? String(error.detail) : 'Unknown error';
-        Alert.alert('Could not create profile', detail.includes('taken') ? 'Username is already taken.' : detail);
+        showAlert('Could not create profile', detail.includes('taken') ? 'Username is already taken.' : detail);
         return;
       }
       await refreshProfile();
       // AuthGuard redirects to / once profile is ready.
     } catch (e: unknown) {
-      Alert.alert('Error', e instanceof Error ? e.message : 'Something went wrong.');
+      showAlert('Error', e instanceof Error ? e.message : 'Something went wrong.');
     } finally {
       setLoading(false);
     }
