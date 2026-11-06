@@ -40,8 +40,13 @@ class Proof(ApiModel):
     image_url: str | None = Field(description="Short-lived signed URL for viewing the image")
     caption: str | None
     ai_verdict: AiVerdict | None
-    ai_confidence: float | None = Field(ge=0, le=1)
-    ai_reason: str | None
+    ai_confidence: float | None = Field(
+        ge=0,
+        le=1,
+        description="The model's probability that its verdict is right. Null when the proof "
+        "was approved without AI verification",
+    )
+    ai_reason: str | None = Field(description="One sentence for the user explaining the verdict")
     xp_awarded: Count
     dispute_reason: str | None
     disputed_at: datetime | None

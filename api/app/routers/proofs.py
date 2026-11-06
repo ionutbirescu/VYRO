@@ -25,6 +25,7 @@ from app.services.storage import ProofStorage, Storage
 router = APIRouter(tags=["proofs"])
 
 EXTENSIONS = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
+MIME_TYPES = {extension: mime for mime, extension in EXTENSIONS.items()}
 
 
 def _object_prefix(user: User, participation_id: UUID, task_id: UUID) -> str:
@@ -128,7 +129,8 @@ def submit_proof(
     db.add(proof)
 
     started = time.monotonic()
-    result = verification.verify(task, proof.image_path, proof.caption)
+    mime_type = MIME_TYPES[proof.image_path.rsplit(".", 1)[1]]
+    result = verification.verify(task, storage.read(proof.image_path), mime_type, proof.caption)
     proof.ai_verdict = result.verdict
     proof.ai_confidence = result.confidence
     proof.ai_reason = result.reason

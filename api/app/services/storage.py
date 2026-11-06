@@ -38,6 +38,8 @@ class ProofStorage(Protocol):
 
     def exists(self, object_path: str) -> bool: ...
 
+    def read(self, object_path: str) -> bytes: ...
+
 
 class CloudStorage:
     def __init__(self, bucket: str) -> None:
@@ -77,6 +79,9 @@ class CloudStorage:
     def exists(self, object_path: str) -> bool:
         return self._bucket.blob(object_path).exists()
 
+    def read(self, object_path: str) -> bytes:
+        return self._bucket.blob(object_path).download_as_bytes()
+
 
 class LocalStorage:
     def __init__(self, root: Path, base_url: str) -> None:
@@ -106,6 +111,9 @@ class LocalStorage:
 
     def exists(self, object_path: str) -> bool:
         return self.path(object_path).is_file()
+
+    def read(self, object_path: str) -> bytes:
+        return self.path(object_path).read_bytes()
 
 
 @cache

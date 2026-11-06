@@ -3964,7 +3964,8 @@
                 "type": "null"
               }
             ],
-            "title": "Ai Confidence"
+            "title": "Ai Confidence",
+            "description": "The model's probability that its verdict is right. Null when the proof was approved without AI verification"
           },
           "ai_reason": {
             "anyOf": [
@@ -3975,7 +3976,8 @@
                 "type": "null"
               }
             ],
-            "title": "Ai Reason"
+            "title": "Ai Reason",
+            "description": "One sentence for the user explaining the verdict"
           },
           "xp_awarded": {
             "type": "integer",
