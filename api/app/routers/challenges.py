@@ -23,7 +23,7 @@ from app.schemas.challenges import (
 )
 from app.schemas.challenges import Participation as ParticipationOut
 from app.schemas.common import Difficulty, DurationDaysQuery, Limit
-from app.services import achievements, progress
+from app.services import achievements, events, progress
 from app.services.challenges import get_visible, participation_out, summaries, visible_to
 
 router = APIRouter(tags=["challenges"])
@@ -120,6 +120,18 @@ def create_challenge(body: ChallengeCreate, user: CurrentUser, db: DbSession) ->
     )
     db.add(challenge)
     db.flush()
+    events.log(
+        db,
+        user,
+        "challenge_created",
+        challenge_id=challenge.id,
+        source=challenge.source,
+        category=challenge.category,
+        difficulty=challenge.difficulty,
+        duration_days=challenge.duration_days,
+        visibility=challenge.visibility,
+        generation_id=challenge.generation_id,
+    )
     achievements.unlock_new(db, user, now)
     db.commit()
     return _detail(db, user, challenge)
@@ -162,6 +174,18 @@ def join_challenge(
         recommendation_id=body.recommendation_id if body else None,
     )
     db.add(participation)
+    db.flush()
+    events.log(
+        db,
+        user,
+        "challenge_joined",
+        challenge_id=challenge.id,
+        participation_id=participation.id,
+        recommendation_id=participation.recommendation_id,
+        category=challenge.category,
+        difficulty=challenge.difficulty,
+        duration_days=challenge.duration_days,
+    )
     db.commit()
     return participation_out(participation)
 
@@ -175,6 +199,14 @@ def leave_challenge(challenge_id: UUID, user: CurrentUser, db: DbSession) -> Par
         raise HTTPException(status.HTTP_404_NOT_FOUND, "You are not in this challenge")
     participation.status = ParticipationStatus.ABANDONED
     participation.ended_at = datetime.now(UTC)
+    events.log(
+        db,
+        user,
+        "challenge_left",
+        challenge_id=challenge_id,
+        participation_id=participation.id,
+        completed_tasks=participation.completed_tasks,
+    )
     db.commit()
     return participation_out(participation)
 

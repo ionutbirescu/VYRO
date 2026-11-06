@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.enums import ChallengeSource, ParticipationStatus, ProofStatus
 from app.models import Challenge, Participation, Proof, User, UserAchievement
 from app.schemas.gamification import Achievement
+from app.services import events
 
 
 @dataclass(frozen=True)
@@ -187,6 +188,8 @@ def unlock_new(db: Session, user: User, now: datetime) -> list[Achievement]:
     stats = _stats(db, user)
     new = [d for d in DEFINITIONS if d.code not in unlocked and d.earned(stats)]
     db.add_all(UserAchievement(user_id=user.id, code=d.code, unlocked_at=now) for d in new)
+    for definition in new:
+        events.log(db, user, "achievement_unlocked", code=definition.code)
     return [_to_schema(d, now) for d in new]
 
 

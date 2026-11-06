@@ -19,7 +19,7 @@ from app.schemas.proofs import (
     UploadUrl,
     UploadUrlRequest,
 )
-from app.services import progress, verification
+from app.services import events, progress, verification
 from app.services.storage import ProofStorage, Storage
 
 router = APIRouter(tags=["proofs"])
@@ -135,6 +135,20 @@ def submit_proof(
     proof.ai_model = result.model
     proof.ai_latency_ms = round((time.monotonic() - started) * 1000)
     proof.verified_at = datetime.now(UTC)
+    db.flush()
+    events.log(
+        db,
+        user,
+        "proof_verified",
+        proof_id=proof.id,
+        challenge_id=participation.challenge_id,
+        participation_id=participation.id,
+        day_number=task.day_number,
+        verdict=result.verdict,
+        confidence=result.confidence,
+        model=result.model,
+        latency_ms=proof.ai_latency_ms,
+    )
 
     rewards = None
     if result.verdict is AiVerdict.PASS:
@@ -162,5 +176,13 @@ def dispute_proof(
     proof.status = ProofStatus.DISPUTED
     proof.dispute_reason = body.reason
     proof.disputed_at = datetime.now(UTC)
+    events.log(
+        db,
+        user,
+        "proof_disputed",
+        proof_id=proof.id,
+        verdict=proof.ai_verdict,
+        confidence=proof.ai_confidence,
+    )
     db.commit()
     return _proof_out(proof, storage)
