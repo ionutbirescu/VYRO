@@ -1188,9 +1188,15 @@ export interface components {
             /** Caption */
             caption: string | null;
             ai_verdict: components["schemas"]["AiVerdict"] | null;
-            /** Ai Confidence */
+            /**
+             * Ai Confidence
+             * @description The model's probability that its verdict is right. Null when the proof was approved without AI verification
+             */
             ai_confidence: number | null;
-            /** Ai Reason */
+            /**
+             * Ai Reason
+             * @description One sentence for the user explaining the verdict
+             */
             ai_reason: string | null;
             /** Xp Awarded */
             xp_awarded: number;
