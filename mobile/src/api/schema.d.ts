@@ -336,6 +336,9 @@ export interface paths {
         /**
          * Generate Challenge
          * @description Draft a challenge with AI. Nothing is published until POST /v1/challenges.
+         *
+         *     A 30-day draft can take several seconds. If the model fails, the draft comes from a
+         *     built-in template instead, so this only errors when the quota is used up.
          */
         post: operations["generate_challenge"];
         delete?: never;
@@ -369,7 +372,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Rate Generation */
+        /**
+         * Rate Generation
+         * @description Rate an AI draft from 1 to 5. Rating again replaces the earlier rating.
+         */
         put: operations["rate_generation"];
         post?: never;
         delete?: never;

@@ -1627,7 +1627,7 @@
           "ai"
         ],
         "summary": "Generate Challenge",
-        "description": "Draft a challenge with AI. Nothing is published until POST /v1/challenges.",
+        "description": "Draft a challenge with AI. Nothing is published until POST /v1/challenges.\n\nA 30-day draft can take several seconds. If the model fails, the draft comes from a\nbuilt-in template instead, so this only errors when the quota is used up.",
         "operationId": "generate_challenge",
         "requestBody": {
           "content": {
@@ -1743,6 +1743,7 @@
           "ai"
         ],
         "summary": "Rate Generation",
+        "description": "Rate an AI draft from 1 to 5. Rating again replaces the earlier rating.",
         "operationId": "rate_generation",
         "security": [
           {
