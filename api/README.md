@@ -87,7 +87,7 @@ The study metrics come from the `events` table. The app sends client events thro
 | Event | Properties |
 |---|---|
 | `challenge_created` | `challenge_id`, `source`, `category`, `difficulty`, `duration_days`, `visibility`, `generation_id` |
-| `challenge_joined` | `challenge_id`, `participation_id`, `recommendation_id`, `category`, `difficulty`, `duration_days` |
+| `challenge_joined` | `challenge_id`, `participation_id`, `recommendation_id`, `category`, `difficulty`, `duration_days`, `target_difficulty` |
 | `challenge_left` | `challenge_id`, `participation_id`, `completed_tasks` |
 | `proof_verified` | `proof_id`, `challenge_id`, `participation_id`, `day_number`, `verdict`, `confidence`, `model`, `latency_ms` |
 | `proof_disputed` | `proof_id`, `verdict`, `confidence` |

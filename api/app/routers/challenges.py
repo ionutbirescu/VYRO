@@ -24,6 +24,7 @@ from app.schemas.challenges import (
 from app.schemas.challenges import Participation as ParticipationOut
 from app.schemas.common import Difficulty, DurationDaysQuery, Limit
 from app.services import achievements, events, progress
+from app.services import difficulty as adaptive
 from app.services.challenges import get_visible, participation_out, summaries, visible_to
 
 router = APIRouter(tags=["challenges"])
@@ -172,6 +173,7 @@ def join_challenge(
         challenge_id=challenge.id,
         challenge=challenge,
         recommendation_id=body.recommendation_id if body else None,
+        target_difficulty_at_join=adaptive.target(db, user, datetime.now(UTC)),
     )
     db.add(participation)
     db.flush()
@@ -185,6 +187,7 @@ def join_challenge(
         category=challenge.category,
         difficulty=challenge.difficulty,
         duration_days=challenge.duration_days,
+        target_difficulty=participation.target_difficulty_at_join,
     )
     db.commit()
     return participation_out(participation)

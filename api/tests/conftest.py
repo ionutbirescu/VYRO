@@ -88,9 +88,7 @@ def make_user(db: Session, uid: str, username: str | None = None, **fields: obje
         firebase_uid=uid,
         username=username or uid.replace("-", "_"),
         display_name=uid.title(),
-        study_group=StudyGroup.TREATMENT,
-        price_variant=PriceVariant.A,
-        **fields,
+        **{"study_group": StudyGroup.TREATMENT, "price_variant": PriceVariant.A, **fields},
     )
     db.add(user)
     db.flush()
