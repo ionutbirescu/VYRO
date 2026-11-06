@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.enums import ParticipationStatus, ProofStatus
 from app.models import ChallengeTask, Participation, Proof, User
 from app.schemas.gamification import Rewards
-from app.services import achievements
+from app.services import achievements, events
 
 # XP per task. Challenge XP is always derived from difficulty, never chosen by the creator.
 TASK_XP = {1: 10, 2: 15, 3: 25, 4: 35, 5: 50}
@@ -110,6 +110,28 @@ def approve_proof(
     user.level = level_for_xp(user.xp)
     record_activity(user, now)
     db.flush()
+
+    events.log(
+        db,
+        user,
+        "task_completed",
+        challenge_id=challenge.id,
+        participation_id=participation.id,
+        day_number=task.day_number,
+        xp=xp,
+    )
+    if finished:
+        events.log(
+            db,
+            user,
+            "challenge_completed",
+            challenge_id=challenge.id,
+            participation_id=participation.id,
+            difficulty=challenge.difficulty,
+            duration_days=challenge.duration_days,
+        )
+    if user.level > level_before:
+        events.log(db, user, "level_up", level=user.level)
 
     return Rewards(
         xp_awarded=xp,
