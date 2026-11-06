@@ -9,6 +9,10 @@ __pycache__/
 # Proof photos stored by a local API (no Cloud Storage bucket)
 api/.uploads/
 
+# Study exports and photos for raters (python -m analysis...): never commit these
+api/study-data*/
+api/to-rate*/
+
 # Secrets and local config
 .env
 .env.*

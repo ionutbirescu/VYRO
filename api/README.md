@@ -96,6 +96,7 @@ The study metrics come from the `events` table. The app sends client events thro
 | `challenge_left` | `challenge_id`, `participation_id`, `completed_tasks` |
 | `proof_verified` | `proof_id`, `challenge_id`, `participation_id`, `day_number`, `verdict`, `confidence`, `model`, `latency_ms` |
 | `proof_disputed` | `proof_id`, `verdict`, `confidence` |
+| `proof_dispute_resolved` | `proof_id`, `approved` (from `analysis.disputes`) |
 | `task_completed` | `challenge_id`, `participation_id`, `day_number`, `xp` |
 | `challenge_completed` | `challenge_id`, `participation_id`, `difficulty`, `duration_days` |
 | `level_up` | `level` |
@@ -104,6 +105,29 @@ The study metrics come from the `events` table. The app sends client events thro
 | `ai_generation_rated` | `generation_id`, `model`, `rating` |
 
 To record a new one, call `events.log(db, user, "name", key=value)` from `app/services/events.py` and add it here.
+
+## Study tools
+
+The `analysis/` scripts aren't deployed. Run them from `api/`:
+
+| Command | What it does |
+|---|---|
+| `python -m analysis.export --out study-data` | Pseudonymized CSV export of the users who gave research consent (`--all-users` for test runs). No names, titles, goals, captions or photos |
+| `python -m analysis.metrics study-data` | The RQ1-RQ3 and generation metrics per study group, as Markdown (`--json` for raw numbers) |
+| `python -m analysis.labels export --rater rater1 --out to-rate`, then `import to-rate/rater1.csv --rater rater1` | Human rating of proof photos, the ground truth for RQ3. Raters don't see the AI verdict |
+| `python -m analysis.disputes list`, `approve <proof_id>`, `reject <proof_id>` | Review disputed proofs. Approving awards the task as of when the photo was sent |
+
+To use them on production data, connect through the [Cloud SQL Auth Proxy](https://cloud.google.com/sql/docs/postgres/sql-proxy):
+
+```sh
+cloud-sql-proxy vyro-app-2026:europe-west1:vyro-db --port 5433
+# The password is inside the URL stored in Secret Manager:
+#   gcloud secrets versions access latest --secret=vyro-database-url --project=vyro-app-2026
+export VYRO_DATABASE_URL="postgresql+psycopg://vyro:<password>@localhost:5433/vyro"
+export VYRO_PROOF_BUCKET=vyro-app-2026-proofs   # analysis.labels downloads photos from here
+```
+
+`study-data*/` and `to-rate*/` are git-ignored. Keep them within the study team and delete rating folders when the rating is done.
 
 ## Who builds what
 

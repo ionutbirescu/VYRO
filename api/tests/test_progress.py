@@ -51,6 +51,13 @@ def test_streak_counts_consecutive_local_days() -> None:
     assert (user.current_streak, user.longest_streak) == (1, 2)
 
 
+def test_a_late_approval_leaves_the_streak_alone() -> None:
+    # A dispute approved today for a photo submitted three days ago.
+    user = _user(last_active_on=NOW.date(), current_streak=2, longest_streak=2)
+    progress.record_activity(user, NOW - timedelta(days=3))
+    assert (user.last_active_on, user.current_streak) == (NOW.date(), 2)
+
+
 def test_streak_days_follow_the_users_time_zone() -> None:
     user = _user(timezone="Europe/Bucharest", last_active_on=date(2026, 11, 3))
     user.current_streak = user.longest_streak = 4
