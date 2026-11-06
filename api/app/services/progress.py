@@ -44,9 +44,13 @@ def local_date(user: User, at: datetime) -> date:
 
 
 def record_activity(user: User, at: datetime) -> None:
-    """Extend the user's streak for an approved proof at `at`, once per local day."""
+    """Extend the user's streak for an approved proof at `at`, once per local day.
+
+    An approval dated before the user's latest activity (a dispute approved days later) leaves
+    the streak alone.
+    """
     today = local_date(user, at)
-    if user.last_active_on == today:
+    if user.last_active_on is not None and today <= user.last_active_on:
         return
     if user.last_active_on == today - timedelta(days=1):
         user.current_streak += 1
