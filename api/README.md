@@ -82,7 +82,7 @@ Merging to `main` runs CI. When CI passes, Cloud Build builds the image, runs mi
 
 ## Analytics events
 
-The study metrics come from the `events` table. The app sends client events through `POST /v1/events` (`source = client`): `app_opened`, `app_foregrounded` and whatever screens log with `logEvent`. The API records these itself (`source = server`), in the same transaction as the action, so a failed request records nothing:
+The study metrics come from the `events` table. The app sends client events through `POST /v1/events` (`source = client`): `app_opened`, `app_foregrounded`, `recommendation_opened` and whatever else screens log with `logEvent`. The API records these itself (`source = server`), in the same transaction as the action, so a failed request records nothing:
 
 | Event | Properties |
 |---|---|
@@ -95,6 +95,7 @@ The study metrics come from the `events` table. The app sends client events thro
 | `challenge_completed` | `challenge_id`, `participation_id`, `difficulty`, `duration_days` |
 | `level_up` | `level` |
 | `achievement_unlocked` | `code` |
+| `recommendations_served` | `recommendation_id`, `strategy` (`random` or `content_epsilon_greedy`), `target_difficulty`, `candidates`, `items` (`rank`, `challenge_id`, `score`, `explore`) |
 
 To record a new one, call `events.log(db, user, "name", key=value)` from `app/services/events.py` and add it here.
 
