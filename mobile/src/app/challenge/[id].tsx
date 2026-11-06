@@ -20,7 +20,8 @@ const DIFFICULTY_LABEL: Record<number, { label: string; color: string }> = {
 };
 
 export default function ChallengeScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // rec: the recommendation that led here, if any; joins report it for the study.
+  const { id, rec } = useLocalSearchParams<{ id: string; rec?: string }>();
   const colors = useTheme();
   const [challenge, setChallenge] = useState<Schemas['ChallengeDetail'] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,6 +41,7 @@ export default function ChallengeScreen() {
     setJoining(true);
     const { error } = await api.POST('/v1/challenges/{challenge_id}/join', {
       params: { path: { challenge_id: challenge.id } },
+      body: rec ? { recommendation_id: rec } : undefined,
     });
     if (error) {
       Alert.alert('Could not join', 'Try again later.');

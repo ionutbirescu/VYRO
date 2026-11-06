@@ -5,6 +5,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api } from '@/api/client';
+import { logEvent } from '@/api/events';
 import type { Schemas } from '@/api/client';
 import { ChallengeCard } from '@/components/challenge-card';
 import { ThemedText } from '@/components/themed-text';
@@ -31,6 +32,8 @@ export default function HomeScreen() {
   const [active, setActive] = useState<AsyncData<Schemas['ParticipationWithChallenge'][]>>({
     status: 'loading',
   });
+  // Sent back when joining, so the study can tell which recommendations led to a join.
+  const [recommendationId, setRecommendationId] = useState<string | null>(null);
   const [recs, setRecs] = useState<AsyncData<Schemas['Recommendation'][]>>({
     status: 'loading',
   });
@@ -42,7 +45,10 @@ export default function HomeScreen() {
     );
 
     api.GET('/v1/recommendations', { params: { query: { limit: 5 } } }).then(
-      ({ data }) => setRecs(data?.items.length ? { status: 'ok', data: data.items } : { status: 'empty' }),
+      ({ data }) => {
+        setRecommendationId(data?.recommendation_id ?? null);
+        setRecs(data?.items.length ? { status: 'ok', data: data.items } : { status: 'empty' });
+      },
       () => setRecs({ status: 'empty' }),
     );
   }, []);
@@ -120,7 +126,19 @@ export default function HomeScreen() {
                     <ChallengeCard
                       variant="full"
                       challenge={r.challenge}
-                      onPress={() => router.push(`/challenge/${r.challenge.id}`)}
+                      onPress={() => {
+                        logEvent('recommendation_opened', {
+                          recommendation_id: recommendationId,
+                          challenge_id: r.challenge.id,
+                          rank: r.rank,
+                        });
+                        router.push({
+                          pathname: '/challenge/[id]',
+                          params: recommendationId
+                            ? { id: r.challenge.id, rec: recommendationId }
+                            : { id: r.challenge.id },
+                        });
+                      }}
                     />
                     {r.reason && (
                       <ThemedText type="small" themeColor="textSecondary" style={styles.reason}>
