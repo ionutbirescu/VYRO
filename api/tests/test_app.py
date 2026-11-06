@@ -52,7 +52,7 @@ def test_unregistered_user_must_register(db_client: TestClient) -> None:
 
 
 def test_unbuilt_endpoint_is_501(db_client: TestClient, user: User) -> None:
-    assert db_client.get("/v1/recommendations", headers=auth()).status_code == 501
+    assert db_client.get("/v1/me/friends", headers=auth()).status_code == 501
 
 
 def test_ingest_events(db_client: TestClient, db: Session, user: User) -> None:

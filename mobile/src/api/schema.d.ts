@@ -394,6 +394,9 @@ export interface paths {
         /**
          * Get Recommendations
          * @description Challenges picked for the current user, best first.
+         *
+         *     Pass `recommendation_id` when joining one of them, and in events about them, so the study
+         *     can tell which recommendations led to a join. Each call is a fresh pick.
          */
         get: operations["get_recommendations"];
         put?: never;

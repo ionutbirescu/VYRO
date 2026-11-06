@@ -87,7 +87,7 @@ Merging to `main` runs CI. When CI passes, Cloud Build builds the image, runs mi
 
 ## Analytics events
 
-The study metrics come from the `events` table. The app sends client events through `POST /v1/events` (`source = client`): `app_opened`, `app_foregrounded` and whatever screens log with `logEvent`. The API records these itself (`source = server`), in the same transaction as the action, so a failed request records nothing:
+The study metrics come from the `events` table. The app sends client events through `POST /v1/events` (`source = client`): `app_opened`, `app_foregrounded`, `recommendation_opened` and whatever else screens log with `logEvent`. The API records these itself (`source = server`), in the same transaction as the action, so a failed request records nothing:
 
 | Event | Properties |
 |---|---|
