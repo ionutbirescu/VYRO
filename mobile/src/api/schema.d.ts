@@ -408,6 +408,9 @@ export interface paths {
         /**
          * Get Challenge Leaderboard
          * @description Participants ranked by completed tasks, then by who got there first.
+         *
+         *     Each user is listed once, with their best attempt: leaving and rejoining starts a new
+         *     participation, and an earlier attempt that got further still counts. Ranks are unique.
          */
         get: operations["get_challenge_leaderboard"];
         put?: never;
