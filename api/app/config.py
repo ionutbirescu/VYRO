@@ -24,6 +24,16 @@ class Settings(BaseSettings):
     # Cloud Storage bucket for proof photos. Unset locally: the API stores them itself.
     # Not validated here: the migration job shares these settings and has no bucket.
     proof_bucket: str | None = None
+    # Google Cloud project for Gemini on Vertex AI. Unset (or empty): no model calls, so the
+    # generator uses its templates and proofs fall back to the placeholder verifier.
+    ai_project: str | None = None
+    # The newest Gemini models are served from the global endpoint only.
+    ai_location: str = "global"
+    # A cheaper model writes challenges; the stronger one judges photos.
+    ai_generation_model: str = "gemini-3.5-flash-lite"
+    ai_verification_model: str = "gemini-3.5-flash"
+    # Free users' AI drafts per local day; VYRO+ is unlimited.
+    ai_daily_limit: int = 5
 
     @model_validator(mode="after")
     def _check_prod_safety(self) -> Self:

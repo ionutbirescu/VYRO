@@ -32,6 +32,11 @@ Settings are environment variables with the `VYRO_` prefix. They are read from `
 | `VYRO_FIREBASE_PROJECT_ID` | none | Required for `firebase` mode |
 | `VYRO_CORS_ORIGINS` | `["http://localhost:8081"]` | JSON list; only matters for Expo web |
 | `VYRO_PROOF_BUCKET` | none | Cloud Storage bucket for proof photos. Unset, the API stores them in `api/.uploads` and serves them at `/dev/uploads`, so the proof flow works locally. Cloud Build sets it in production. |
+| `VYRO_AI_PROJECT` | none | Google Cloud project for Gemini on Vertex AI. Unset, nothing calls a model: AI drafts come from templates. Locally, run `gcloud auth application-default login` first. Cloud Build sets it in production. |
+| `VYRO_AI_LOCATION` | `global` | Vertex AI location. The Gemini 3.x models are only on `global` |
+| `VYRO_AI_GENERATION_MODEL` | `gemini-3.5-flash-lite` | Writes challenge drafts |
+| `VYRO_AI_VERIFICATION_MODEL` | `gemini-3.5-flash` | Judges proof photos |
+| `VYRO_AI_DAILY_LIMIT` | `5` | AI drafts per local day for free users; VYRO+ is unlimited |
 
 ## Auth
 
@@ -95,7 +100,8 @@ The study metrics come from the `events` table. The app sends client events thro
 | `challenge_completed` | `challenge_id`, `participation_id`, `difficulty`, `duration_days` |
 | `level_up` | `level` |
 | `achievement_unlocked` | `code` |
-| `recommendations_served` | `recommendation_id`, `strategy` (`random` or `content_epsilon_greedy`), `target_difficulty`, `candidates`, `items` (`rank`, `challenge_id`, `score`, `explore`) |
+| `ai_challenge_generated` | `generation_id`, `model`, `duration_days`, `difficulty`, `latency_ms` |
+| `ai_generation_rated` | `generation_id`, `model`, `rating` |
 
 To record a new one, call `events.log(db, user, "name", key=value)` from `app/services/events.py` and add it here.
 

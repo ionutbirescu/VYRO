@@ -10,6 +10,8 @@ os.environ.setdefault(
     "VYRO_DATABASE_URL",
     "postgresql+psycopg://vyro:vyro@localhost:5432/vyro_test?connect_timeout=5",
 )
+# Never call Vertex AI from tests, even if api/.env sets a project; tests fake the model.
+os.environ["VYRO_AI_PROJECT"] = ""
 
 import pytest
 from alembic import command
