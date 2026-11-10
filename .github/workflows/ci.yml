@@ -95,4 +95,4 @@ jobs:
           --config=api/cloudbuild.yaml
           --service-account=projects/${{ vars.GCP_PROJECT_ID }}/serviceAccounts/${{ vars.GCP_DEPLOY_SA }}
           --gcs-source-staging-dir=gs://${{ vars.GCP_PROJECT_ID }}_cloudbuild/source
-          --substitutions=_TAG=${{ github.sha }}
+          --substitutions=_TAG=${{ github.sha }},_FIREBASE_WEB_API_KEY=${{ vars.FIREBASE_WEB_API_KEY }}

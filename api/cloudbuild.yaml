@@ -7,8 +7,10 @@ substitutions:
   _TAG: manual
   _IMAGE: ${_REGION}-docker.pkg.dev/${PROJECT_ID}/vyro/api:${_TAG}
   # Firebase Web API key: a public client identifier (also shipped in the mobile app), used by
-  # the API to verify Firebase ID tokens via the REST lookup endpoint. Not a secret.
-  _FIREBASE_WEB_API_KEY: AIzaSyC-JTNsOm9HOyIYrBZm_CPTqWJ-tfMqYzg
+  # the API to verify Firebase ID tokens via the REST lookup endpoint. Not a secret, but kept
+  # out of the repo (passed from the FIREBASE_WEB_API_KEY GitHub Actions variable) so secret
+  # scanning doesn't flag the AIza-prefixed string.
+  _FIREBASE_WEB_API_KEY: ""
 
 options:
   dynamicSubstitutions: true
