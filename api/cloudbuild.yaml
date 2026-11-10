@@ -6,6 +6,9 @@ substitutions:
   _SERVICE: vyro-api
   _TAG: manual
   _IMAGE: ${_REGION}-docker.pkg.dev/${PROJECT_ID}/vyro/api:${_TAG}
+  # Firebase Web API key: a public client identifier (also shipped in the mobile app), used by
+  # the API to verify Firebase ID tokens via the REST lookup endpoint. Not a secret.
+  _FIREBASE_WEB_API_KEY: AIzaSyC-JTNsOm9HOyIYrBZm_CPTqWJ-tfMqYzg
 
 options:
   dynamicSubstitutions: true
@@ -51,7 +54,7 @@ steps:
       - --service-account=vyro-api@${PROJECT_ID}.iam.gserviceaccount.com
       # Public: the API authenticates every /v1 request with a Firebase ID token itself.
       - --allow-unauthenticated
-      - --set-env-vars=VYRO_ENV=prod,VYRO_AUTH_MODE=firebase,VYRO_FIREBASE_PROJECT_ID=${PROJECT_ID},VYRO_PROOF_BUCKET=${PROJECT_ID}-proofs,VYRO_AI_PROJECT=${PROJECT_ID}
+      - --set-env-vars=VYRO_ENV=prod,VYRO_AUTH_MODE=firebase,VYRO_FIREBASE_PROJECT_ID=${PROJECT_ID},VYRO_FIREBASE_WEB_API_KEY=${_FIREBASE_WEB_API_KEY},VYRO_PROOF_BUCKET=${PROJECT_ID}-proofs,VYRO_AI_PROJECT=${PROJECT_ID}
       - --set-cloudsql-instances=${PROJECT_ID}:${_REGION}:vyro-db
       - --set-secrets=VYRO_DATABASE_URL=vyro-database-url:latest
       - --cpu=1
