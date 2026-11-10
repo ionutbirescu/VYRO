@@ -35,7 +35,10 @@ async function fetchProfileStatus(
   if (data) return { status: 'ready', user, profile: data };
   const detail = error && typeof error === 'object' && 'detail' in error ? error.detail : null;
   if (detail === 'registration_required') return { status: 'needs_profile', user };
-  // Network or unexpected error — stay as needs_profile so user can retry.
+  // A valid user whose profile fetch failed for another reason (e.g. the token wasn't
+  // attached, or a transient network/cold-start error). Surface it rather than dropping the
+  // user on create-profile, where the POST would then fail with "Missing bearer token".
+  console.warn('fetchProfileStatus: unexpected /v1/me error', detail ?? error);
   return { status: 'needs_profile', user };
 }
 
@@ -66,13 +69,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Resolve the token from the live currentUser on every request, so it can never be a
+    // stale closure captured before the ID token was minted.
+    setTokenProvider(async () => {
+      const current = auth.currentUser;
+      return current ? current.getIdToken() : null;
+    });
+
     return onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        setTokenProvider(async () => null);
         setState({ status: 'unauthenticated' });
         return;
       }
-      setTokenProvider(() => user.getIdToken());
       setState(await fetchProfileStatus(user));
     });
   }, []);

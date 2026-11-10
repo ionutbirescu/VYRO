@@ -21,9 +21,7 @@ from app.schemas.common import ErrorResponse
 DEV_TOKEN_PREFIX = "dev:"
 REGISTRATION_REQUIRED = "registration_required"
 
-_FIREBASE_LOOKUP_URL = (
-    "https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={api_key}"
-)
+_FIREBASE_LOOKUP_URL = "https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={api_key}"
 
 AUTH_RESPONSES: dict[int | str, dict[str, Any]] = {
     status.HTTP_401_UNAUTHORIZED: {

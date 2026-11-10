@@ -48,6 +48,11 @@ extend-exclude = ["alembic/versions"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
 
+[tool.ruff.lint.per-file-ignores]
+# Seed data is long challenge/task copy kept inline for readability; wrapping it or rewriting
+# punctuation (em dashes, curly quotes) would hurt legibility without improving the script.
+"scripts/seed.py" = ["E501", "RUF001"]
+
 [tool.ruff.lint.isort]
 # The local alembic/ migrations folder would otherwise make ruff treat alembic as first-party.
 known-third-party = ["alembic"]

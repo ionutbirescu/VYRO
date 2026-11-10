@@ -17,11 +17,15 @@ router = APIRouter(tags=["social"])
 
 def _follow_status(db, me_id: UUID, target_id: UUID) -> FollowStatus:
     following = (
-        db.scalar(select(Follow).where(Follow.follower_id == me_id, Follow.followee_id == target_id))
+        db.scalar(
+            select(Follow).where(Follow.follower_id == me_id, Follow.followee_id == target_id)
+        )
         is not None
     )
     followed_by = (
-        db.scalar(select(Follow).where(Follow.follower_id == target_id, Follow.followee_id == me_id))
+        db.scalar(
+            select(Follow).where(Follow.follower_id == target_id, Follow.followee_id == me_id)
+        )
         is not None
     )
     return FollowStatus(

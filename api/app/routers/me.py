@@ -13,26 +13,33 @@ from app.models import Follow, Participation, User
 from app.pagination import page
 from app.schemas.common import Limit
 from app.schemas.users import Me, MeCreate, MeUpdate, UserPage, UserProfile, UserSummary
-from app.services import events, progress
 from app.services import difficulty as adaptive
+from app.services import events, progress
 
 router = APIRouter(tags=["users"])
 
 
 def _counts(db, user_id: UUID) -> tuple[int, int, int]:
     """Return (followers_count, following_count, completed_challenges)."""
-    followers = db.scalar(
-        select(func.count()).select_from(Follow).where(Follow.followee_id == user_id)
-    ) or 0
-    following = db.scalar(
-        select(func.count()).select_from(Follow).where(Follow.follower_id == user_id)
-    ) or 0
-    completed = db.scalar(
-        select(func.count()).select_from(Participation).where(
-            Participation.user_id == user_id,
-            Participation.status == ParticipationStatus.COMPLETED,
+    followers = (
+        db.scalar(select(func.count()).select_from(Follow).where(Follow.followee_id == user_id))
+        or 0
+    )
+    following = (
+        db.scalar(select(func.count()).select_from(Follow).where(Follow.follower_id == user_id))
+        or 0
+    )
+    completed = (
+        db.scalar(
+            select(func.count())
+            .select_from(Participation)
+            .where(
+                Participation.user_id == user_id,
+                Participation.status == ParticipationStatus.COMPLETED,
+            )
         )
-    ) or 0
+        or 0
+    )
     return followers, following, completed
 
 
