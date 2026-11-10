@@ -51,10 +51,6 @@ def test_unregistered_user_must_register(db_client: TestClient) -> None:
     assert response.json()["detail"] == "registration_required"
 
 
-def test_unbuilt_endpoint_is_501(db_client: TestClient, user: User) -> None:
-    assert db_client.get("/v1/me/friends", headers=auth()).status_code == 501
-
-
 def test_ingest_events(db_client: TestClient, db: Session, user: User) -> None:
     response = db_client.post(
         "/v1/events",
