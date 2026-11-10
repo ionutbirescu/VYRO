@@ -6,13 +6,11 @@ so the API and mock clients can run without Firebase.
 """
 
 from dataclasses import dataclass
-from functools import cache
 from typing import Annotated, Any
 
-import firebase_admin
+import httpx
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from firebase_admin import auth as firebase_auth
 from sqlalchemy import select
 
 from app.config import AuthMode, get_settings
@@ -22,6 +20,10 @@ from app.schemas.common import ErrorResponse
 
 DEV_TOKEN_PREFIX = "dev:"
 REGISTRATION_REQUIRED = "registration_required"
+
+_FIREBASE_LOOKUP_URL = (
+    "https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={api_key}"
+)
 
 AUTH_RESPONSES: dict[int | str, dict[str, Any]] = {
     status.HTTP_401_UNAUTHORIZED: {
@@ -51,11 +53,37 @@ def _unauthorized(detail: str) -> HTTPException:
     )
 
 
-@cache
-def _firebase_app() -> firebase_admin.App:
-    return firebase_admin.initialize_app(
-        options={"projectId": get_settings().firebase_project_id}, name="vyro"
-    )
+def _verify_firebase_token(token: str) -> Principal:
+    """Verify a Firebase ID token via the Firebase REST API (no service account needed)."""
+    api_key = get_settings().firebase_web_api_key
+    if not api_key:
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            "VYRO_FIREBASE_WEB_API_KEY is not configured",
+        )
+    try:
+        response = httpx.post(
+            _FIREBASE_LOOKUP_URL.format(api_key=api_key),
+            json={"idToken": token},
+            timeout=10,
+        )
+    except httpx.TimeoutException as exc:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, "Could not verify token, try again"
+        ) from exc
+
+    if response.status_code != 200:
+        error_msg = response.json().get("error", {}).get("message", "INVALID_ID_TOKEN")
+        if "EXPIRED" in error_msg:
+            raise _unauthorized("Token expired, please sign in again")
+        raise _unauthorized("Invalid or expired token")
+
+    users = response.json().get("users", [])
+    if not users:
+        raise _unauthorized("Invalid or expired token")
+
+    user = users[0]
+    return Principal(uid=user["localId"], email=user.get("email"))
 
 
 def get_principal(
@@ -71,15 +99,7 @@ def get_principal(
             raise _unauthorized("Dev mode expects a 'dev:<uid>' token")
         return Principal(uid=uid)
 
-    try:
-        claims = firebase_auth.verify_id_token(token, app=_firebase_app())
-    except firebase_auth.CertificateFetchError as exc:
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE, "Could not verify token, try again"
-        ) from exc
-    except (firebase_auth.InvalidIdTokenError, ValueError) as exc:
-        raise _unauthorized("Invalid or expired token") from exc
-    return Principal(uid=claims["uid"], email=claims.get("email"))
+    return _verify_firebase_token(token)
 
 
 CurrentPrincipal = Annotated[Principal, Depends(get_principal)]

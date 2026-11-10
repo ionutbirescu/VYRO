@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ProgressBar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -71,14 +72,11 @@ export default function ProfileScreen() {
                 {p.xp.toLocaleString()} / {p.next_level_xp.toLocaleString()} XP
               </ThemedText>
             </View>
-            <View style={[styles.xpTrack, { backgroundColor: colors.backgroundSelected }]}>
-              <LinearGradient
-                colors={[AccentColor, '#a78bfa']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={[styles.xpFill, { width: `${xpPct * 100}%` as `${number}%` }]}
-              />
-            </View>
+            <ProgressBar
+              progress={xpPct}
+              color={AccentColor}
+              style={styles.xpTrack}
+            />
             {p.is_plus && (
               <View style={styles.plusRow}>
                 <Ionicons name="flash" size={13} color="#f59e0b" />
@@ -222,11 +220,6 @@ const styles = StyleSheet.create({
   },
   xpTrack: {
     height: 8,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  xpFill: {
-    height: '100%',
     borderRadius: 4,
   },
   plusRow: {

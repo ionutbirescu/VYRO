@@ -1,18 +1,16 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
+import { Button, Snackbar, TextInput as PaperInput } from 'react-native-paper';
 
 import { useAuth } from '@/contexts/auth';
-import { Spacing } from '@/constants/theme';
+import { AccentColor, Spacing } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -21,7 +19,15 @@ export default function LoginScreen() {
   const colors = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [snackMsg, setSnackMsg] = useState('');
+  const [snackVisible, setSnackVisible] = useState(false);
+
+  function showError(msg: string) {
+    setSnackMsg(msg);
+    setSnackVisible(true);
+  }
 
   async function handleLogin() {
     if (!email.trim() || !password) return;
@@ -30,11 +36,13 @@ export default function LoginScreen() {
       await signIn(email.trim(), password);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Sign-in failed';
-      Alert.alert('Sign-in failed', friendlyError(message));
+      showError(friendlyError(message));
     } finally {
       setLoading(false);
     }
   }
+
+  const inputBg = colors.backgroundElement;
 
   return (
     <KeyboardAvoidingView
@@ -53,39 +61,51 @@ export default function LoginScreen() {
           </ThemedText>
 
           <View style={styles.fields}>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.backgroundSelected }]}
-              placeholder="Email"
-              placeholderTextColor={colors.textSecondary}
+            <PaperInput
+              mode="outlined"
+              label="Email"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
               textContentType="emailAddress"
+              left={<PaperInput.Icon icon="email-outline" />}
+              style={{ backgroundColor: inputBg }}
             />
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.backgroundSelected }]}
-              placeholder="Password"
-              placeholderTextColor={colors.textSecondary}
+            <PaperInput
+              mode="outlined"
+              label="Password"
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
+              secureTextEntry={!showPassword}
               autoComplete="password"
               textContentType="password"
               onSubmitEditing={handleLogin}
               returnKeyType="done"
+              left={<PaperInput.Icon icon="lock-outline" />}
+              right={
+                <PaperInput.Icon
+                  icon={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  onPress={() => setShowPassword((v) => !v)}
+                />
+              }
+              style={{ backgroundColor: inputBg }}
             />
           </View>
 
-          <Pressable
-            style={[styles.button, { opacity: loading ? 0.6 : 1 }]}
+          <Button
+            mode="contained"
             onPress={handleLogin}
-            disabled={loading}>
-            <ThemedText style={styles.buttonText}>
-              {loading ? 'Signing in…' : 'Sign in'}
-            </ThemedText>
-          </Pressable>
+            loading={loading}
+            disabled={loading}
+            style={styles.button}
+            contentStyle={styles.buttonContent}
+            labelStyle={styles.buttonLabel}
+            buttonColor={AccentColor}
+          >
+            Sign in
+          </Button>
 
           <View style={styles.footer}>
             <ThemedText type="small" themeColor="textSecondary">Don&apos;t have an account?{' '}</ThemedText>
@@ -96,6 +116,15 @@ export default function LoginScreen() {
         </View>
 
       </ScrollView>
+
+      <Snackbar
+        visible={snackVisible}
+        onDismiss={() => setSnackVisible(false)}
+        duration={3500}
+        style={styles.snackbar}
+      >
+        {snackMsg}
+      </Snackbar>
     </KeyboardAvoidingView>
   );
 }
@@ -127,22 +156,15 @@ const styles = StyleSheet.create({
   heading: { textAlign: 'center' },
   sub: { textAlign: 'center', marginTop: -Spacing.two },
   fields: { gap: Spacing.two },
-  input: {
-    borderRadius: 12,
-    padding: Spacing.three,
-    fontSize: 16,
-    borderWidth: 1,
-  },
   button: {
     borderRadius: 14,
-    padding: Spacing.three,
-    alignItems: 'center',
-    backgroundColor: '#007AFF',
     marginTop: Spacing.one,
   },
-  buttonText: { color: '#FFFFFF', fontWeight: '600', fontSize: 16 },
+  buttonContent: { paddingVertical: 6 },
+  buttonLabel: { fontSize: 16, fontWeight: '600', letterSpacing: 0.3 },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
   },
+  snackbar: { marginBottom: Spacing.four },
 });

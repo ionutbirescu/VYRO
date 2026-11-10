@@ -8,6 +8,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { Chip } from 'react-native-paper';
 
 import type { Schemas } from '@/api/client';
 import { Spacing } from '@/constants/theme';
@@ -141,9 +142,13 @@ export function ChallengeCard(props: ChallengeCardProps) {
             <ThemedText type="small" themeColor="textSecondary">
               {challenge.category.replace('_', ' ')}
             </ThemedText>
-            <ThemedText type="small" style={{ color: diff.color }}>
+            <Chip
+              compact
+              style={[styles.diffChip, { backgroundColor: diff.color + '22' }]}
+              textStyle={{ color: diff.color, fontSize: 11, fontWeight: '700' }}
+            >
               {diff.label}
-            </ThemedText>
+            </Chip>
           </View>
 
           <ThemedText style={styles.fullTitle} numberOfLines={2}>
@@ -218,6 +223,10 @@ const styles = StyleSheet.create({
   },
   progressFill: { height: '100%', borderRadius: 2 },
 
+  diffChip: {
+    height: 26,
+    justifyContent: 'center',
+  },
   full: {
     borderRadius: 12,
     borderWidth: 1,
