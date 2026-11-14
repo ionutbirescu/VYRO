@@ -433,6 +433,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/challenges/{challenge_id}/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Challenge Activity
+         * @description Approved proofs in this challenge, newest first.
+         */
+        get: operations["get_challenge_activity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/users/{user_id}/achievements": {
         parameters: {
             query?: never;
@@ -594,6 +614,49 @@ export interface components {
          * @enum {string}
          */
         AcquiredVia: "earned" | "purchased";
+        /**
+         * ActivityItem
+         * @description One approved proof: someone completed a day of the challenge.
+         */
+        ActivityItem: {
+            /**
+             * Proof Id
+             * Format: uuid
+             */
+            proof_id: string;
+            user: components["schemas"]["UserSummary"];
+            /** Day Number */
+            day_number: number;
+            /** Task Title */
+            task_title: string;
+            /**
+             * Completed At
+             * Format: date-time
+             */
+            completed_at: string;
+            /**
+             * Image Url
+             * @description Short-lived photo URL. Only for users who joined the challenge
+             */
+            image_url: string | null;
+            /**
+             * Caption
+             * @description Only for users who joined the challenge
+             */
+            caption: string | null;
+        };
+        /** ActivityPage */
+        ActivityPage: {
+            /** Items */
+            items: components["schemas"]["ActivityItem"][];
+            /**
+             * Can View Proofs
+             * @description The current user joined the challenge, so items include photos and captions
+             */
+            can_view_proofs: boolean;
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
         /** AiQuota */
         AiQuota: {
             /** Used Today */
@@ -2731,6 +2794,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Leaderboard"];
+                };
+            };
+            /** @description Missing, invalid or expired bearer token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `registration_required`: signed in but no profile yet; call POST /v1/me */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_challenge_activity: {
+        parameters: {
+            query?: {
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityPage"];
                 };
             };
             /** @description Missing, invalid or expired bearer token */

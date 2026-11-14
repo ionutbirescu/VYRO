@@ -1962,6 +1962,103 @@
         }
       }
     },
+    "/v1/challenges/{challenge_id}/activity": {
+      "get": {
+        "tags": [
+          "activity"
+        ],
+        "summary": "Get Challenge Activity",
+        "description": "Approved proofs in this challenge, newest first.",
+        "operationId": "get_challenge_activity",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "challenge_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Challenge Id"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`registration_required`: signed in but no profile yet; call POST /v1/me",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/users/{user_id}/achievements": {
       "get": {
         "tags": [
@@ -2461,6 +2558,103 @@
           "purchased"
         ],
         "title": "AcquiredVia"
+      },
+      "ActivityItem": {
+        "properties": {
+          "proof_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Proof Id"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserSummary"
+          },
+          "day_number": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Day Number"
+          },
+          "task_title": {
+            "type": "string",
+            "title": "Task Title"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Completed At"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url",
+            "description": "Short-lived photo URL. Only for users who joined the challenge"
+          },
+          "caption": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caption",
+            "description": "Only for users who joined the challenge"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "proof_id",
+          "user",
+          "day_number",
+          "task_title",
+          "completed_at",
+          "image_url",
+          "caption"
+        ],
+        "title": "ActivityItem",
+        "description": "One approved proof: someone completed a day of the challenge."
+      },
+      "ActivityPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "can_view_proofs": {
+            "type": "boolean",
+            "title": "Can View Proofs",
+            "description": "The current user joined the challenge, so items include photos and captions"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "can_view_proofs"
+        ],
+        "title": "ActivityPage"
       },
       "AiQuota": {
         "properties": {
