@@ -13,9 +13,10 @@ export const API_URL =
   process.env.EXPO_PUBLIC_API_URL ||
   (devServerHost ? `http://${devServerHost}:8000` : 'http://localhost:8000');
 
-// Local API and mock server only (VYRO_AUTH_MODE=dev): until Firebase sign-in is wired up,
-// requests are sent as the user "dev:<DEV_UID>".
-export const DEV_UID = process.env.EXPO_PUBLIC_DEV_UID;
+// Local API and mock server only (VYRO_AUTH_MODE=dev): skips Firebase sign-in and sends requests
+// as the user "dev:<DEV_UID>". Development builds only, so a TestFlight or App Store build always
+// signs in with Firebase, even if the variable is set by mistake.
+export const DEV_UID = __DEV__ ? process.env.EXPO_PUBLIC_DEV_UID : undefined;
 
 export const FIREBASE_CONFIG = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY ?? '',
