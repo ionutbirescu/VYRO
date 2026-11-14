@@ -35,6 +35,9 @@ services:
       VYRO_DATABASE_URL: postgresql+psycopg://vyro:vyro@db:5432/vyro
       # Changes made on Windows don't reach the container as file events, so poll for them.
       WATCHFILES_FORCE_POLLING: "true"
+      # Gemini stays off (drafts come from templates) unless this is set, e.g. in a .env file
+      # next to this one. It then uses your gcloud application-default login, mounted below.
+      VYRO_AI_PROJECT: ${VYRO_AI_PROJECT:-}
     ports:
       - "8000:8000"
     volumes:
@@ -42,6 +45,8 @@ services:
       - ./api/alembic:/srv/alembic
       - ./api/scripts:/srv/scripts
       - ./api/.uploads:/srv/.uploads
+      # gcloud's config folder: %APPDATA%\gcloud on Windows, ~/.config/gcloud elsewhere.
+      - ${APPDATA:-~/.config}/gcloud:/root/.config/gcloud:ro
     depends_on:
       db:
         condition: service_healthy
