@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { ProgressBar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -80,7 +81,7 @@ export default function ProfileScreen() {
             {p.is_plus && (
               <View style={styles.plusRow}>
                 <Ionicons name="flash" size={13} color="#f59e0b" />
-                <ThemedText type="small" style={styles.plusBadge}>ChallengeMe+</ThemedText>
+                <ThemedText type="small" style={styles.plusBadge}>VYRO+</ThemedText>
               </View>
             )}
           </View>
@@ -90,7 +91,18 @@ export default function ProfileScreen() {
             <StatCard icon="flame" iconColor="#f97316" value={p.current_streak} label="day streak" />
             <StatCard icon="calendar-outline" iconColor={AccentColor} value={p.longest_streak} label="longest streak" />
             <StatCard icon="checkmark-circle-outline" iconColor="#22c55e" value={p.completed_challenges} label="completed" />
-            <StatCard icon="people-outline" iconColor="#a78bfa" value={p.followers_count} label="followers" />
+            <StatCard
+              icon="people-outline"
+              iconColor="#a78bfa"
+              value={p.followers_count}
+              label={`followers · ${p.following_count} following`}
+              onPress={() =>
+                router.push({
+                  pathname: '/user/connections',
+                  params: { id: p.id, name: p.display_name, tab: 'followers' },
+                })
+              }
+            />
           </View>
 
           {/* Theme picker */}
@@ -140,21 +152,32 @@ function StatCard({
   iconColor,
   value,
   label,
+  onPress,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   iconColor: string;
   value: number;
   label: string;
+  onPress?: () => void;
 }) {
   const colors = useTheme();
   return (
-    <View style={[styles.statCard, { backgroundColor: colors.backgroundElement }]}>
+    <Pressable
+      style={({ pressed }) => [
+        styles.statCard,
+        { backgroundColor: colors.backgroundElement, opacity: pressed && onPress ? 0.7 : 1 },
+      ]}
+      onPress={onPress}
+      disabled={!onPress}>
       <View style={styles.statIconRow}>
         <Ionicons name={icon} size={18} color={iconColor} />
         <ThemedText type="subtitle" style={styles.statValue}>{value}</ThemedText>
+        {onPress && (
+          <Ionicons name="chevron-forward" size={14} color={colors.textSecondary} style={styles.statChevron} />
+        )}
       </View>
       <ThemedText type="small" themeColor="textSecondary">{label}</ThemedText>
-    </View>
+    </Pressable>
   );
 }
 
@@ -243,6 +266,7 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     gap: Spacing.one,
   },
+  statChevron: { marginLeft: 'auto' },
   statIconRow: {
     flexDirection: 'row',
     alignItems: 'center',

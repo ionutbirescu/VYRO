@@ -92,6 +92,7 @@ function ThemedStack() {
               <Stack.Screen name="challenge/chat" options={{ title: 'Chat' }} />
               <Stack.Screen name="proof/submit" options={{ title: 'Submit Proof' }} />
               <Stack.Screen name="user/[id]" options={{ title: 'Profile' }} />
+              <Stack.Screen name="user/connections" options={{ title: 'Connections' }} />
             </Stack>
           </AuthGuard>
         </AuthProvider>
