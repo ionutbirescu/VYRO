@@ -81,13 +81,17 @@ function ThemedStack() {
       <ThemeProvider value={resolvedScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <AuthProvider>
           <AuthGuard>
-            <Stack>
+            {/* iOS 26 makes headers transparent by default, which slides the screen's content
+                under them, and the back button would show the previous route's name, e.g.
+                "(tabs)". An opaque header and an arrow-only back button avoid both. */}
+            <Stack screenOptions={{ headerTransparent: false, headerBackButtonDisplayMode: 'minimal' }}>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="auth" options={{ headerShown: false }} />
               <Stack.Screen name="challenge/[id]" options={{ title: 'Challenge' }} />
               <Stack.Screen name="challenge/leaderboard" options={{ title: 'Leaderboard' }} />
               <Stack.Screen name="challenge/chat" options={{ title: 'Chat' }} />
               <Stack.Screen name="proof/submit" options={{ title: 'Submit Proof' }} />
+              <Stack.Screen name="user/[id]" options={{ title: 'Profile' }} />
             </Stack>
           </AuthGuard>
         </AuthProvider>
