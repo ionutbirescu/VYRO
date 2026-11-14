@@ -7,11 +7,13 @@ import {
   getReactNativePersistence,
   initializeAuth,
   type Persistence,
+  signInAnonymously,
+  type User,
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { Platform } from 'react-native';
 
-import { FIREBASE_CONFIG } from '@/config';
+import { DEV_UID, FIREBASE_CONFIG } from '@/config';
 
 const app = initializeApp(FIREBASE_CONFIG);
 
@@ -23,3 +25,14 @@ const persistence: Persistence =
 
 export const auth = initializeAuth(app, { persistence });
 export const db = getFirestore(app);
+
+/**
+ * The Firebase account chat runs as; Firestore's rules only let signed-in accounts in.
+ * The dev build skips Firebase sign-in (EXPO_PUBLIC_DEV_UID), so it signs in anonymously.
+ */
+export async function chatAccount(): Promise<User | null> {
+  await auth.authStateReady();
+  if (auth.currentUser) return auth.currentUser;
+  if (DEV_UID) return (await signInAnonymously(auth)).user;
+  return null;
+}
