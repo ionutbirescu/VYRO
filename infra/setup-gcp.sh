@@ -129,6 +129,8 @@ echo "== Firestore (challenge chat)"
 exists gc firestore databases describe --database="(default)" ||
   gc firestore databases create --database="(default)" --location="$REGION" \
     --type=firestore-native
+# Without released rules Firestore denies every request, so chat wouldn't work.
+PROJECT_ID=$PROJECT_ID "$(dirname "$0")/deploy-firestore-rules.sh"
 
 echo "== Proof photo bucket"
 PROOF_BUCKET=gs://$PROJECT_ID-proofs
