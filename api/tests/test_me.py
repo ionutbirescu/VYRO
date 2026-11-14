@@ -72,3 +72,24 @@ def test_search_finds_others_by_username_or_name(db_client: TestClient, db: Sess
     assert search("tester") == []  # never yourself
     assert search("maria_") == ["maria_p"]
     assert search("mari_") == []  # a literal underscore, not a wildcard for "mario"
+
+
+def test_follow_status(db_client: TestClient, db: Session, user: User) -> None:
+    maria, radu = make_user(db, "maria"), make_user(db, "radu")
+    db.add_all(
+        [
+            Follow(follower_id=user.id, followee_id=maria.id),
+            Follow(follower_id=maria.id, followee_id=user.id),
+            Follow(follower_id=radu.id, followee_id=user.id),
+        ]
+    )
+    db.flush()
+
+    def status(other: User) -> tuple[bool, bool, bool]:
+        response = db_client.get(f"/v1/users/{other.id}/follow", headers=auth())
+        assert response.status_code == 200, response.text
+        body = response.json()
+        return body["following"], body["followed_by"], body["is_friend"]
+
+    assert status(maria) == (True, True, True)
+    assert status(radu) == (False, True, False)
