@@ -50,7 +50,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Search Users */
+        /**
+         * Search Users
+         * @description Other users whose username starts with `q` or whose display name contains it.
+         */
         get: operations["search_users"];
         put?: never;
         post?: never;
@@ -1643,7 +1646,7 @@ export interface operations {
     search_users: {
         parameters: {
             query: {
-                /** @description Username prefix */
+                /** @description Start of a username, or part of a display name */
                 q: string;
                 cursor?: string | null;
                 limit?: number;

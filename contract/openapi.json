@@ -211,6 +211,7 @@
           "users"
         ],
         "summary": "Search Users",
+        "description": "Other users whose username starts with `q` or whose display name contains it.",
         "operationId": "search_users",
         "security": [
           {
@@ -226,10 +227,10 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 64,
-              "description": "Username prefix",
+              "description": "Start of a username, or part of a display name",
               "title": "Q"
             },
-            "description": "Username prefix"
+            "description": "Start of a username, or part of a display name"
           },
           {
             "name": "cursor",

@@ -26,12 +26,9 @@ from app.schemas.common import Difficulty, DurationDaysQuery, Limit
 from app.services import achievements, events, progress
 from app.services import difficulty as adaptive
 from app.services.challenges import get_visible, participation_out, summaries, visible_to
+from app.text import escape_like
 
 router = APIRouter(tags=["challenges"])
-
-
-def _escape_like(text: str) -> str:
-    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 @router.get("/challenges")
@@ -54,7 +51,7 @@ def list_challenges(
     if duration_days:
         stmt = stmt.where(Challenge.duration_days == duration_days)
     if q and q.strip():
-        stmt = stmt.where(Challenge.title.ilike(f"%{_escape_like(q.strip())}%", escape="\\"))
+        stmt = stmt.where(Challenge.title.ilike(f"%{escape_like(q.strip())}%", escape="\\"))
     challenges, next_cursor = page(db, stmt, Challenge.created_at, Challenge.id, cursor, limit)
     return ChallengePage(items=summaries(db, challenges), next_cursor=next_cursor)
 
