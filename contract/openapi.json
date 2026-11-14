@@ -2898,12 +2898,13 @@
       },
       "AiQuota": {
         "properties": {
-          "used_today": {
+          "used": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Used Today"
+            "title": "Used",
+            "description": "Drafts delivered in the last window_hours"
           },
-          "daily_limit": {
+          "limit": {
             "anyOf": [
               {
                 "type": "integer",
@@ -2913,21 +2914,35 @@
                 "type": "null"
               }
             ],
-            "title": "Daily Limit",
-            "description": "Null means unlimited (VYRO+)"
+            "title": "Limit",
+            "description": "Free drafts per window. Null means unlimited (VYRO+)"
           },
-          "resets_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Resets At"
+          "window_hours": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Window Hours"
+          },
+          "next_free_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Free At",
+            "description": "When a draft is available again. Null while drafts are left"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "used_today",
-          "daily_limit",
-          "resets_at"
+          "used",
+          "limit",
+          "window_hours",
+          "next_free_at"
         ],
         "title": "AiQuota"
       },

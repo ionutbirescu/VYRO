@@ -46,7 +46,8 @@ Settings are environment variables with the `VYRO_` prefix. They are read from `
 | `VYRO_AI_LOCATION` | `global` | Vertex AI location. The Gemini 3.x models are only on `global` |
 | `VYRO_AI_GENERATION_MODEL` | `gemini-3.5-flash-lite` | Writes challenge drafts |
 | `VYRO_AI_VERIFICATION_MODEL` | `gemini-3.5-flash` | Judges proof photos |
-| `VYRO_AI_DAILY_LIMIT` | `5` | AI drafts per local day for free users; VYRO+ is unlimited |
+| `VYRO_AI_FREE_DRAFTS` | `2` | AI drafts a free user gets per rolling window; VYRO+ is unlimited |
+| `VYRO_AI_FREE_WINDOW_HOURS` | `48` | Length of that window. A draft frees its slot when it's older than this |
 
 ## Auth
 
@@ -97,7 +98,7 @@ Merging to `main` runs CI. When CI passes, Cloud Build builds the image, runs mi
 
 ## Analytics events
 
-The study metrics come from the `events` table. The app sends client events through `POST /v1/events` (`source = client`): `app_opened`, `app_foregrounded`, `recommendation_opened` and whatever else screens log with `logEvent`. The API records these itself (`source = server`), in the same transaction as the action, so a failed request records nothing:
+The study metrics come from the `events` table. The app sends client events through `POST /v1/events` (`source = client`): `app_opened`, `app_foregrounded`, `recommendation_opened`, `vyro_plus_prompt_viewed` and `vyro_plus_prompt_tapped` (`source`: where the prompt was), and whatever else screens log with `logEvent`. The API records these itself (`source = server`), in the same transaction as the action, so a failed request records nothing:
 
 | Event | Properties |
 |---|---|

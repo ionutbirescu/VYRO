@@ -699,18 +699,23 @@ export interface components {
         };
         /** AiQuota */
         AiQuota: {
-            /** Used Today */
-            used_today: number;
             /**
-             * Daily Limit
-             * @description Null means unlimited (VYRO+)
+             * Used
+             * @description Drafts delivered in the last window_hours
              */
-            daily_limit: number | null;
+            used: number;
             /**
-             * Resets At
-             * Format: date-time
+             * Limit
+             * @description Free drafts per window. Null means unlimited (VYRO+)
              */
-            resets_at: string;
+            limit: number | null;
+            /** Window Hours */
+            window_hours: number;
+            /**
+             * Next Free At
+             * @description When a draft is available again. Null while drafts are left
+             */
+            next_free_at: string | null;
         };
         /**
          * AiVerdict
