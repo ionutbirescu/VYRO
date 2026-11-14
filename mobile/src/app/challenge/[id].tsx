@@ -1,15 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api } from '@/api/client';
 import type { Schemas } from '@/api/client';
+import { ActivityCard } from '@/components/activity-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+
+// How many recent proofs the challenge screen shows; "See all" opens the rest.
+const ACTIVITY_PREVIEW = 3;
 
 const DIFFICULTY_LABEL: Record<number, { label: string; color: string }> = {
   1: { label: 'Easy', color: '#22c55e' },
@@ -24,6 +28,7 @@ export default function ChallengeScreen() {
   const { id, rec } = useLocalSearchParams<{ id: string; rec?: string }>();
   const colors = useTheme();
   const [challenge, setChallenge] = useState<Schemas['ChallengeDetail'] | null>(null);
+  const [activity, setActivity] = useState<Schemas['ActivityPage'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
 
@@ -35,6 +40,23 @@ export default function ChallengeScreen() {
       setLoading(false);
     });
   }, [id]);
+
+  const loadActivity = useCallback(
+    () =>
+      api
+        .GET('/v1/challenges/{challenge_id}/activity', {
+          params: { path: { challenge_id: id }, query: { limit: ACTIVITY_PREVIEW } },
+        })
+        .then(({ data }) => setActivity(data ?? null)),
+    [id],
+  );
+
+  // Also on return from submitting a proof or commenting.
+  useFocusEffect(
+    useCallback(() => {
+      loadActivity();
+    }, [loadActivity]),
+  );
 
   async function handleJoin() {
     if (!challenge) return;
@@ -50,6 +72,8 @@ export default function ChallengeScreen() {
         params: { path: { challenge_id: challenge.id } },
       });
       if (data) setChallenge(data);
+      // Joining unlocks photos and comments.
+      loadActivity();
     }
     setJoining(false);
   }
@@ -197,6 +221,40 @@ export default function ChallengeScreen() {
             </Pressable>
           </View>
 
+          {/* What participants did */}
+          <View style={styles.sectionHeader}>
+            <ThemedText type="smallBold" style={styles.sectionTitle}>
+              ACTIVITY
+            </ThemedText>
+            {activity && activity.items.length > 0 && (
+              <Pressable
+                hitSlop={8}
+                onPress={() =>
+                  router.push({
+                    pathname: '/challenge/activity',
+                    params: { challenge_id: challenge.id },
+                  })
+                }>
+                <ThemedText type="small" themeColor="textSecondary" style={styles.sectionLink}>
+                  See all ›
+                </ThemedText>
+              </Pressable>
+            )}
+          </View>
+          {activity && activity.items.length === 0 && (
+            <ThemedText type="small" themeColor="textSecondary">
+              Nobody has completed a day yet. Be the first!
+            </ThemedText>
+          )}
+          {activity && !activity.can_view_proofs && activity.items.length > 0 && (
+            <ThemedText type="small" themeColor="textSecondary">
+              Join to see everyone&apos;s photos and comment on them.
+            </ThemedText>
+          )}
+          {activity?.items.map((item) => (
+            <ActivityCard key={item.proof_id} item={item} canView={activity.can_view_proofs} />
+          ))}
+
           {/* Task list */}
           <ThemedText type="smallBold" style={styles.sectionTitle}>
             DAILY TASKS
@@ -305,6 +363,8 @@ const styles = StyleSheet.create({
   secondaryBtn: { borderRadius: 12, padding: Spacing.three, alignItems: 'center' },
   secondaryBtnContent: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   sectionTitle: { letterSpacing: 0.8, marginTop: Spacing.two },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+  sectionLink: { marginTop: Spacing.two },
   taskCard: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
   taskHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   dayBadge: {
