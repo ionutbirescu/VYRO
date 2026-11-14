@@ -263,6 +263,21 @@ class Proof(Base):
     verified_at: Mapped[datetime | None]
 
 
+class ProofComment(CreatedAtMixin, Base):
+    """A comment under an approved proof, by someone who joined the same challenge."""
+
+    __tablename__ = "proof_comments"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    proof_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("proofs.id", ondelete="CASCADE"), index=True
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    body: Mapped[str] = mapped_column(String(500))
+
+
 class ProofLabel(CreatedAtMixin, Base):
     """Human rater judgement of a proof; ground truth for RQ3 (agreement and calibration)."""
 
@@ -379,6 +394,6 @@ class Report(CreatedAtMixin, Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     reporter_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     target_type: Mapped[ReportTarget] = mapped_column(_enum(ReportTarget, "report_target"))
-    # A UUID for users/challenges/proofs; a Firestore document id for chat messages.
+    # A UUID for users/challenges/proofs/comments; a Firestore document id for chat messages.
     target_id: Mapped[str] = mapped_column(String(128))
     reason: Mapped[str] = mapped_column(String(500))

@@ -3,10 +3,11 @@ from typing import Any
 from uuid import UUID
 
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.enums import ParticipationStatus, ProofStatus, Visibility
-from app.models import Challenge, Participation, Proof, User
+from app.models import Challenge, Event, Participation, Proof, User
 from tests.conftest import auth, make_challenge, make_user
 
 START = datetime(2026, 11, 2, 18, tzinfo=UTC)
@@ -106,3 +107,82 @@ def test_hidden_challenges_are_not_found(db_client: TestClient, db: Session, use
     challenge = make_challenge(db, creator=make_user(db, "stranger"), visibility=Visibility.FRIENDS)
     response = db_client.get(f"/v1/challenges/{challenge.id}/activity", headers=auth())
     assert response.status_code == 404
+
+
+def comment(client: TestClient, proof_id: UUID, body: str, uid: str = "test-user") -> Any:
+    return client.post(f"/v1/proofs/{proof_id}/comments", headers=auth(uid), json={"body": body})
+
+
+def comments(client: TestClient, proof_id: UUID, uid: str = "test-user") -> list[Any]:
+    response = client.get(f"/v1/proofs/{proof_id}/comments", headers=auth(uid))
+    assert response.status_code == 200, response.text
+    return response.json()["items"]
+
+
+def test_participants_comment_on_proofs(db_client: TestClient, db: Session, user: User) -> None:
+    challenge = make_challenge(db)
+    maria = make_user(db, "maria")
+    marias_proof = prove(db, join(db, maria, challenge), 1)
+    join(db, user, challenge)
+
+    first = comment(db_client, marias_proof.id, "  Nice one!  ")
+    assert first.status_code == 201, first.text
+    assert (first.json()["body"], first.json()["can_delete"]) == ("Nice one!", True)
+    assert comment(db_client, marias_proof.id, "Thanks :)", uid="maria").status_code == 201
+
+    mine = comments(db_client, marias_proof.id)
+    assert [(c["user"]["username"], c["can_delete"]) for c in mine] == [
+        ("maria", False),
+        ("tester", True),
+    ]
+    # Maria owns the proof, so she may delete any comment under it.
+    assert [c["can_delete"] for c in comments(db_client, marias_proof.id, uid="maria")] == [
+        True,
+        True,
+    ]
+    [item] = activity(db_client, challenge.id)["items"]
+    assert item["comment_count"] == 2
+    events = db.scalars(select(Event).where(Event.name == "proof_commented")).all()
+    assert sorted(e.properties["own_proof"] for e in events) == [False, True]
+
+
+def test_only_participants_see_comments(db_client: TestClient, db: Session, user: User) -> None:
+    challenge = make_challenge(db)
+    proof = prove(db, join(db, make_user(db, "maria"), challenge), 1)
+    pending = prove(db, join(db, user, make_challenge(db)), 1, status=ProofStatus.PENDING)
+
+    assert comment(db_client, proof.id, "Hi").status_code == 404
+    assert db_client.get(f"/v1/proofs/{proof.id}/comments", headers=auth()).status_code == 404
+    assert comment(db_client, pending.id, "Mine, but not approved").status_code == 404
+    assert comment(db_client, proof.id, "   ").status_code == 422
+
+
+def test_deleting_comments(db_client: TestClient, db: Session, user: User) -> None:
+    challenge = make_challenge(db)
+    maria, radu = make_user(db, "maria"), make_user(db, "radu")
+    proof = prove(db, join(db, maria, challenge), 1)
+    join(db, user, challenge)
+    join(db, radu, challenge)
+    mine = comment(db_client, proof.id, "Mine").json()["id"]
+    radus = comment(db_client, proof.id, "Radu's", uid="radu").json()["id"]
+    marias = comment(db_client, proof.id, "Maria's", uid="maria").json()["id"]
+
+    assert db_client.delete(f"/v1/comments/{radus}", headers=auth()).status_code == 403
+    assert db_client.delete(f"/v1/comments/{mine}", headers=auth()).status_code == 204
+    assert db_client.delete(f"/v1/comments/{radus}", headers=auth("maria")).status_code == 204
+    assert [c["id"] for c in comments(db_client, proof.id)] == [marias]
+    assert db_client.delete(f"/v1/comments/{mine}", headers=auth()).status_code == 404
+
+
+def test_comments_can_be_reported(db_client: TestClient, db: Session, user: User) -> None:
+    challenge = make_challenge(db)
+    proof = prove(db, join(db, make_user(db, "maria"), challenge), 1)
+    join(db, user, challenge)
+    comment_id = comment(db_client, proof.id, "Spam", uid="maria").json()["id"]
+
+    response = db_client.post(
+        "/v1/reports",
+        headers=auth(),
+        json={"target_type": "comment", "target_id": comment_id, "reason": "Spam"},
+    )
+    assert response.status_code == 201, response.text

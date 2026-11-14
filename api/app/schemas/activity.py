@@ -1,9 +1,10 @@
 from datetime import datetime
+from typing import Annotated
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, StringConstraints
 
-from app.schemas.common import Schema
+from app.schemas.common import Count, Schema
 from app.schemas.users import UserSummary
 
 
@@ -19,6 +20,7 @@ class ActivityItem(Schema):
         description="Short-lived photo URL. Only for users who joined the challenge"
     )
     caption: str | None = Field(description="Only for users who joined the challenge")
+    comment_count: Count
 
 
 class ActivityPage(Schema):
@@ -26,4 +28,22 @@ class ActivityPage(Schema):
     can_view_proofs: bool = Field(
         description="The current user joined the challenge, so items include photos and captions"
     )
+    next_cursor: str | None = None
+
+
+class CommentCreate(Schema):
+    body: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
+
+
+class Comment(Schema):
+    id: UUID
+    proof_id: UUID
+    user: UserSummary
+    body: str
+    created_at: datetime
+    can_delete: bool = Field(description="The current user wrote it, or owns the proof")
+
+
+class CommentPage(Schema):
+    items: list[Comment] = Field(description="Newest first")
     next_cursor: str | None = None

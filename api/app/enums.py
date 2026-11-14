@@ -74,6 +74,7 @@ class ReportTarget(StrEnum):
     CHALLENGE = "challenge"
     PROOF = "proof"
     MESSAGE = "message"
+    COMMENT = "comment"
 
 
 class ProductKind(StrEnum):

@@ -113,6 +113,7 @@ The study metrics come from the `events` table. The app sends client events thro
 | `achievement_unlocked` | `code` |
 | `ai_challenge_generated` | `generation_id`, `model`, `duration_days`, `difficulty`, `latency_ms` |
 | `ai_generation_rated` | `generation_id`, `model`, `rating` |
+| `proof_commented` | `proof_id`, `challenge_id`, `own_proof` (replying under your own proof) |
 
 To record a new one, call `events.log(db, user, "name", key=value)` from `app/services/events.py` and add it here.
 

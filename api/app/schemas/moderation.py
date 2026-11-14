@@ -10,7 +10,7 @@ from app.schemas.common import Schema
 class ReportCreate(Schema):
     target_type: ReportTarget
     target_id: Annotated[str, StringConstraints(min_length=1, max_length=128)] = Field(
-        description="UUID for users, challenges and proofs; Firestore id for chat messages"
+        description="UUID for users, challenges, proofs and comments; Firestore id for messages"
     )
     reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
 
