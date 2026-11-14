@@ -90,8 +90,11 @@ function ThemedStack() {
               <Stack.Screen name="challenge/[id]" options={{ title: 'Challenge' }} />
               <Stack.Screen name="challenge/leaderboard" options={{ title: 'Leaderboard' }} />
               <Stack.Screen name="challenge/chat" options={{ title: 'Chat' }} />
+              <Stack.Screen name="challenge/activity" options={{ title: 'Activity' }} />
               <Stack.Screen name="proof/submit" options={{ title: 'Submit Proof' }} />
+              <Stack.Screen name="proof/comments" options={{ title: 'Comments' }} />
               <Stack.Screen name="user/[id]" options={{ title: 'Profile' }} />
+              <Stack.Screen name="user/connections" options={{ title: 'Connections' }} />
             </Stack>
           </AuthGuard>
         </AuthProvider>

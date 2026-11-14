@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api } from '@/api/client';
+import { logEvent } from '@/api/events';
 import type { Schemas } from '@/api/client';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -56,19 +57,25 @@ export default function StudioScreen() {
   const [rating, setRating] = useState(0);
   const [publishing, setPublishing] = useState(false);
 
-  useEffect(() => {
+  function loadQuota() {
     api.GET('/v1/ai/quota').then(({ data }) => { if (data) setQuota(data); });
-  }, []);
+  }
 
-  const quotaExhausted =
-    quota && quota.daily_limit !== null && quota.used_today >= quota.daily_limit;
+  useEffect(loadQuota, []);
+
+  // Set only while a free user has no drafts left.
+  const quotaExhausted = !!quota?.next_free_at;
+
+  useEffect(() => {
+    if (quotaExhausted) logEvent('vyro_plus_prompt_viewed', { source: 'ai_studio' });
+  }, [quotaExhausted]);
 
   async function handleGenerate() {
     setGenerating(true);
     setResult(null);
     setRating(0);
 
-    const { data, error } = await api.POST('/v1/ai/challenges/generate', {
+    const { data, response } = await api.POST('/v1/ai/challenges/generate', {
       body: {
         goal: goal.trim() || undefined,
         category: category ?? undefined,
@@ -79,13 +86,11 @@ export default function StudioScreen() {
     if (data) {
       setResult(data);
       setQuota(data.quota);
+    } else if (response.status === 429) {
+      // Out of free drafts (e.g. used up on another device): the VYRO+ card explains.
+      loadQuota();
     } else {
-      const status = error && typeof error === 'object' && 'detail' in error
-        ? String(error.detail) : '';
-      Alert.alert(
-        'Generation failed',
-        status.includes('quota') ? 'Daily limit reached. Try again tomorrow.' : 'Try again later.',
-      );
+      Alert.alert('Generation failed', 'Try again later.');
     }
     setGenerating(false);
   }
@@ -130,14 +135,14 @@ export default function StudioScreen() {
           {/* Quota */}
           {quota && (
             <View style={[styles.quotaBar, { backgroundColor: colors.backgroundElement }]}>
-              {quota.daily_limit === null ? (
+              {quota.limit === null ? (
                 <View style={styles.quotaRow}>
                   <Ionicons name="flash" size={13} color="#f59e0b" />
-                  <ThemedText type="small" themeColor="textSecondary">Unlimited generations (VYRO+)</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">Unlimited drafts (VYRO+)</ThemedText>
                 </View>
               ) : (
                 <ThemedText type="small" themeColor="textSecondary">
-                  {`Generations today: ${quota.used_today} / ${quota.daily_limit}`}
+                  {`${Math.max(quota.limit - quota.used, 0)} of ${quota.limit} free drafts left · every ${quota.window_hours / 24} days`}
                 </ThemedText>
               )}
             </View>
@@ -208,22 +213,45 @@ export default function StudioScreen() {
                 </ThemedText>
               )}
 
-              <Pressable
-                style={[styles.generateBtn, { opacity: (generating || !!quotaExhausted) ? 0.5 : 1 }]}
-                onPress={handleGenerate}
-                disabled={generating || !!quotaExhausted}>
-                {generating
-                  ? <ActivityIndicator color="#fff" />
-                  : (
+              {quota?.next_free_at ? (
+                <View style={[styles.plusCard, { backgroundColor: colors.backgroundElement }]}>
+                  <View style={styles.quotaRow}>
+                    <Ionicons name="flash" size={16} color="#f59e0b" />
+                    <ThemedText type="smallBold">{`You've used your ${quota.limit} free drafts`}</ThemedText>
+                  </View>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {`Your next free draft unlocks ${fromNow(quota.next_free_at)}. VYRO+ gives you unlimited AI drafts, starting now.`}
+                  </ThemedText>
+                  <Pressable
+                    style={styles.generateBtn}
+                    onPress={() => {
+                      logEvent('vyro_plus_prompt_tapped', { source: 'ai_studio' });
+                      router.push('/shop');
+                    }}>
                     <View style={styles.generateBtnContent}>
-                      <Ionicons name="sparkles" size={16} color="#fff" />
-                      <ThemedText style={{ color: '#fff', fontWeight: '600' }}>
-                        Generate challenge
-                      </ThemedText>
+                      <Ionicons name="flash" size={16} color="#fff" />
+                      <ThemedText style={{ color: '#fff', fontWeight: '600' }}>Get VYRO+</ThemedText>
                     </View>
-                  )
-                }
-              </Pressable>
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable
+                  style={[styles.generateBtn, { opacity: generating ? 0.5 : 1 }]}
+                  onPress={handleGenerate}
+                  disabled={generating}>
+                  {generating
+                    ? <ActivityIndicator color="#fff" />
+                    : (
+                      <View style={styles.generateBtnContent}>
+                        <Ionicons name="sparkles" size={16} color="#fff" />
+                        <ThemedText style={{ color: '#fff', fontWeight: '600' }}>
+                          Generate challenge
+                        </ThemedText>
+                      </View>
+                    )
+                  }
+                </Pressable>
+              )}
             </View>
           )}
 
@@ -309,6 +337,16 @@ export default function StudioScreen() {
   );
 }
 
+/** "in 5 h", "in 1 day 3 h", "in under an hour". */
+function fromNow(iso: string): string {
+  const hours = Math.ceil((new Date(iso).getTime() - Date.now()) / 3_600_000);
+  if (hours <= 1) return 'in under an hour';
+  if (hours < 24) return `in ${hours} h`;
+  const days = Math.floor(hours / 24);
+  const rest = hours % 24;
+  return `in ${days} day${days > 1 ? 's' : ''}${rest ? ` ${rest} h` : ''}`;
+}
+
 function Label({ children }: { children: string }) {
   return <ThemedText type="smallBold" style={styles.label}>{children}</ThemedText>;
 }
@@ -350,6 +388,7 @@ const styles = StyleSheet.create({
     backgroundColor: AccentColor,
   },
   generateBtnContent: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  plusCard: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
   preview: { gap: Spacing.three },
   draftCard: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
   draftLabel: { letterSpacing: 0.8 },

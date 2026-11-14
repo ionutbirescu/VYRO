@@ -211,6 +211,7 @@
           "users"
         ],
         "summary": "Search Users",
+        "description": "Other users whose username starts with `q` or whose display name contains it.",
         "operationId": "search_users",
         "security": [
           {
@@ -226,10 +227,10 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 64,
-              "description": "Username prefix",
+              "description": "Start of a username, or part of a display name",
               "title": "Q"
             },
-            "description": "Username prefix"
+            "description": "Start of a username, or part of a display name"
           },
           {
             "name": "cursor",
@@ -373,6 +374,73 @@
       }
     },
     "/v1/users/{user_id}/follow": {
+      "get": {
+        "tags": [
+          "social"
+        ],
+        "summary": "Get Follow Status",
+        "description": "Whether you follow this user, and whether they follow you.",
+        "operationId": "get_follow_status",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`registration_required`: signed in but no profile yet; call POST /v1/me",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "put": {
         "tags": [
           "social"
@@ -1961,6 +2029,337 @@
         }
       }
     },
+    "/v1/challenges/{challenge_id}/activity": {
+      "get": {
+        "tags": [
+          "activity"
+        ],
+        "summary": "Get Challenge Activity",
+        "description": "Approved proofs in this challenge, newest first.",
+        "operationId": "get_challenge_activity",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "challenge_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Challenge Id"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`registration_required`: signed in but no profile yet; call POST /v1/me",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/proofs/{proof_id}/comments": {
+      "get": {
+        "tags": [
+          "activity"
+        ],
+        "summary": "List Comments",
+        "operationId": "list_comments",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "proof_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Proof Id"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`registration_required`: signed in but no profile yet; call POST /v1/me",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "activity"
+        ],
+        "summary": "Create Comment",
+        "operationId": "create_comment",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "proof_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Proof Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Comment"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`registration_required`: signed in but no profile yet; call POST /v1/me",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/comments/{comment_id}": {
+      "delete": {
+        "tags": [
+          "activity"
+        ],
+        "summary": "Delete Comment",
+        "description": "Delete a comment you wrote, or any comment under your own proof.",
+        "operationId": "delete_comment",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "comment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Comment Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Missing, invalid or expired bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`registration_required`: signed in but no profile yet; call POST /v1/me",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/users/{user_id}/achievements": {
       "get": {
         "tags": [
@@ -2461,14 +2860,118 @@
         ],
         "title": "AcquiredVia"
       },
-      "AiQuota": {
+      "ActivityItem": {
         "properties": {
-          "used_today": {
+          "proof_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Proof Id"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserSummary"
+          },
+          "day_number": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Day Number"
+          },
+          "task_title": {
+            "type": "string",
+            "title": "Task Title"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Completed At"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url",
+            "description": "Short-lived photo URL. Only for users who joined the challenge"
+          },
+          "caption": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caption",
+            "description": "Only for users who joined the challenge"
+          },
+          "comment_count": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Used Today"
+            "title": "Comment Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "proof_id",
+          "user",
+          "day_number",
+          "task_title",
+          "completed_at",
+          "image_url",
+          "caption",
+          "comment_count"
+        ],
+        "title": "ActivityItem",
+        "description": "One approved proof: someone completed a day of the challenge."
+      },
+      "ActivityPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityItem"
+            },
+            "type": "array",
+            "title": "Items"
           },
-          "daily_limit": {
+          "can_view_proofs": {
+            "type": "boolean",
+            "title": "Can View Proofs",
+            "description": "The current user joined the challenge, so items include photos and captions"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "can_view_proofs"
+        ],
+        "title": "ActivityPage"
+      },
+      "AiQuota": {
+        "properties": {
+          "used": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Used",
+            "description": "Drafts delivered in the last window_hours"
+          },
+          "limit": {
             "anyOf": [
               {
                 "type": "integer",
@@ -2478,21 +2981,35 @@
                 "type": "null"
               }
             ],
-            "title": "Daily Limit",
-            "description": "Null means unlimited (VYRO+)"
+            "title": "Limit",
+            "description": "Free drafts per window. Null means unlimited (VYRO+)"
           },
-          "resets_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Resets At"
+          "window_hours": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Window Hours"
+          },
+          "next_free_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Free At",
+            "description": "When a draft is available again. Null while drafts are left"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "used_today",
-          "daily_limit",
-          "resets_at"
+          "used",
+          "limit",
+          "window_hours",
+          "next_free_at"
         ],
         "title": "AiQuota"
       },
@@ -2985,6 +3502,93 @@
           "name"
         ],
         "title": "ClientEvent"
+      },
+      "Comment": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "proof_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Proof Id"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserSummary"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "can_delete": {
+            "type": "boolean",
+            "title": "Can Delete",
+            "description": "The current user wrote it, or owns the proof"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "proof_id",
+          "user",
+          "body",
+          "created_at",
+          "can_delete"
+        ],
+        "title": "Comment"
+      },
+      "CommentCreate": {
+        "properties": {
+          "body": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Body"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "body"
+        ],
+        "title": "CommentCreate"
+      },
+      "CommentPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Comment"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Newest first"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "CommentPage"
       },
       "DisputeCreate": {
         "properties": {
@@ -4187,7 +4791,7 @@
             "maxLength": 128,
             "minLength": 1,
             "title": "Target Id",
-            "description": "UUID for users, challenges and proofs; Firestore id for chat messages"
+            "description": "UUID for users, challenges, proofs and comments; Firestore id for messages"
           },
           "reason": {
             "type": "string",
@@ -4226,7 +4830,8 @@
           "user",
           "challenge",
           "proof",
-          "message"
+          "message",
+          "comment"
         ],
         "title": "ReportTarget"
       },

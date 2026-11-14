@@ -34,25 +34,24 @@ export default function UserProfileScreen() {
 
   useEffect(() => {
     if (!id) return;
+    const path = { params: { path: { user_id: id } } };
     Promise.all([
-      api.GET('/v1/users/{user_id}', { params: { path: { user_id: id } } }),
-      api.GET('/v1/users/{user_id}/followers', {
-        params: { path: { user_id: id }, query: { limit: 50 } },
-      }),
-    ]).then(([{ data: prof }, { data: followers }]) => {
+      api.GET('/v1/users/{user_id}', path),
+      isOwnProfile ? Promise.resolve({ data: undefined }) : api.GET('/v1/users/{user_id}/follow', path),
+    ]).then(([{ data: prof }, { data: status }]) => {
       setProfile(prof ?? null);
-      if (prof && myId && !isOwnProfile) {
-        const following = followers?.items.some((u) => u.id === myId) ?? false;
-        setFollowStatus({
-          user_id: id,
-          following,
-          followed_by: false,
-          is_friend: false,
-        });
-      }
+      setFollowStatus(status ?? null);
       setLoading(false);
     });
-  }, [id, myId, isOwnProfile]);
+  }, [id, isOwnProfile]);
+
+  function openConnections(tab: 'followers' | 'following') {
+    if (!profile) return;
+    router.push({
+      pathname: '/user/connections',
+      params: { id: profile.id, name: profile.display_name, tab },
+    });
+  }
 
   async function handleFollow() {
     if (!id || followLoading) return;
@@ -95,12 +94,8 @@ export default function UserProfileScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      <SafeAreaView style={styles.safe}>
-        {/* Back button */}
-        <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-
+      {/* The stack header has the title and back button. */}
+      <SafeAreaView style={styles.safe} edges={['bottom']}>
         <ScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}>
@@ -154,9 +149,17 @@ export default function UserProfileScreen() {
 
           {/* Stats */}
           <View style={styles.statsRow}>
-            <StatItem value={profile.followers_count} label="followers" />
+            <StatItem
+              value={profile.followers_count}
+              label="followers"
+              onPress={() => openConnections('followers')}
+            />
             <View style={[styles.divider, { backgroundColor: colors.backgroundSelected }]} />
-            <StatItem value={profile.following_count} label="following" />
+            <StatItem
+              value={profile.following_count}
+              label="following"
+              onPress={() => openConnections('following')}
+            />
             <View style={[styles.divider, { backgroundColor: colors.backgroundSelected }]} />
             <StatItem value={profile.completed_challenges} label="completed" />
           </View>
@@ -186,12 +189,15 @@ export default function UserProfileScreen() {
   );
 }
 
-function StatItem({ value, label }: { value: number; label: string }) {
+function StatItem({ value, label, onPress }: { value: number; label: string; onPress?: () => void }) {
   return (
-    <View style={styles.statItem}>
+    <Pressable
+      style={({ pressed }) => [styles.statItem, { opacity: pressed && onPress ? 0.6 : 1 }]}
+      onPress={onPress}
+      disabled={!onPress}>
       <ThemedText type="subtitle">{value.toLocaleString()}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{label}</ThemedText>
-    </View>
+    </Pressable>
   );
 }
 
@@ -199,11 +205,6 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   safe: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  backBtn: {
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    alignSelf: 'flex-start',
-  },
   scroll: {
     alignItems: 'center',
     maxWidth: MaxContentWidth,

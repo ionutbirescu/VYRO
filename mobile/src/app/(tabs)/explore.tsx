@@ -16,6 +16,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '@/api/client';
 import type { Schemas } from '@/api/client';
 import { ChallengeCard } from '@/components/challenge-card';
+import { Segmented } from '@/components/segmented';
+import { UserRow } from '@/components/user-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AccentColor, BottomTabInset, MaxContentWidth, Spacing, TabBarWebInset } from '@/constants/theme';
@@ -40,11 +42,20 @@ const CATEGORIES: { key: CategoryKey; label: string; icon: keyof typeof Ionicons
   { key: 'digital_detox', label: 'Digital Detox', icon: 'eye-off-outline' },
 ];
 
+type Mode = 'challenges' | 'people';
+
+const MODES: { value: Mode; label: string }[] = [
+  { value: 'challenges', label: 'Challenges' },
+  { value: 'people', label: 'People' },
+];
+
 export default function ExploreScreen() {
   const colors = useTheme();
+  const [mode, setMode] = useState<Mode>('challenges');
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<CategoryKey>(undefined);
   const [items, setItems] = useState<Schemas['ChallengeSummary'][]>([]);
+  const [people, setPeople] = useState<Schemas['UserSummary'][]>([]);
   const [cursor, setCursor] = useState<string | null | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -79,18 +90,43 @@ export default function ExploreScreen() {
     [],
   );
 
+  const loadPeople = useCallback(async (q: string, nextCursor?: string) => {
+    const isFirst = !nextCursor;
+    if (!q.trim()) {
+      setPeople([]);
+      setCursor(undefined);
+      return;
+    }
+    const setBusy = isFirst ? setLoading : setLoadingMore;
+    setBusy(true);
+    const { data } = await api.GET('/v1/users', {
+      params: { query: { q: q.trim(), limit: 20, cursor: nextCursor } },
+    });
+    if (data) {
+      setPeople((prev) => (isFirst ? data.items : [...prev, ...data.items]));
+      setCursor(data.next_cursor);
+    } else if (isFirst) {
+      setPeople([]);
+      setCursor(undefined);
+    }
+    setBusy(false);
+  }, []);
+
   // Reload when category changes immediately.
   // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
-  useEffect(() => { load(query, category); }, [category]);
+  useEffect(() => { if (mode === 'challenges') load(query, category); }, [category]);
 
-  // Debounce search query.
+  // Debounce search query; switching modes searches the other list for the same text.
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => load(query, category), 300);
+    debounceRef.current = setTimeout(
+      () => (mode === 'people' ? loadPeople(query) : load(query, category)),
+      300,
+    );
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query]);
+  }, [query, mode]);
 
   function handleScroll({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) {
     const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
@@ -99,7 +135,8 @@ export default function ExploreScreen() {
       !loadingMore &&
       layoutMeasurement.height + contentOffset.y >= contentSize.height - 300
     ) {
-      load(query, category, cursor);
+      if (mode === 'people') loadPeople(query, cursor);
+      else load(query, category, cursor);
     }
   }
 
@@ -113,76 +150,105 @@ export default function ExploreScreen() {
           onScroll={handleScroll}
           scrollEventThrottle={200}>
 
+          <View style={styles.modes}>
+            <Segmented options={MODES} value={mode} onChange={setMode} />
+          </View>
+
           {/* Search bar */}
           <View style={[styles.searchWrap, { backgroundColor: colors.backgroundElement }]}>
             <Ionicons name="search-outline" size={18} color={colors.textSecondary} />
             <TextInput
               style={[styles.searchInput, { color: colors.text }]}
-              placeholder="Search challenges…"
+              placeholder={mode === 'people' ? 'Search by name or @username…' : 'Search challenges…'}
               placeholderTextColor={colors.textSecondary}
               value={query}
               onChangeText={setQuery}
               returnKeyType="search"
+              autoCapitalize={mode === 'people' ? 'none' : 'sentences'}
+              autoCorrect={mode !== 'people'}
               clearButtonMode="while-editing"
             />
           </View>
 
-          {/* Category pills */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.pills}>
-            {CATEGORIES.map((cat) => {
-              const active = cat.key === category;
-              return (
-                <Pressable
-                  key={cat.label}
-                  style={[
-                    styles.pill,
-                    active
-                      ? { backgroundColor: AccentColor }
-                      : { backgroundColor: colors.backgroundElement },
-                  ]}
-                  onPress={() => setCategory(cat.key)}>
-                  <Ionicons
-                    name={cat.icon}
-                    size={13}
-                    color={active ? '#fff' : colors.textSecondary}
+          {mode === 'people' && (
+            <>
+              {loading && <ActivityIndicator style={styles.spinner} color={colors.textSecondary} />}
+              {!loading && people.length === 0 && (
+                <ThemedText type="small" themeColor="textSecondary" style={styles.empty}>
+                  {query.trim() ? 'Nobody found.' : 'Find friends by their name or @username.'}
+                </ThemedText>
+              )}
+              <View style={styles.cardList}>
+                {people.map((person) => (
+                  <UserRow key={person.id} user={person} />
+                ))}
+              </View>
+              {loadingMore && (
+                <ActivityIndicator style={styles.spinner} color={colors.textSecondary} />
+              )}
+            </>
+          )}
+
+          {mode === 'challenges' && (
+            <>
+              {/* Category pills */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.pills}>
+                {CATEGORIES.map((cat) => {
+                  const active = cat.key === category;
+                  return (
+                    <Pressable
+                      key={cat.label}
+                      style={[
+                        styles.pill,
+                        active
+                          ? { backgroundColor: AccentColor }
+                          : { backgroundColor: colors.backgroundElement },
+                      ]}
+                      onPress={() => setCategory(cat.key)}>
+                      <Ionicons
+                        name={cat.icon}
+                        size={13}
+                        color={active ? '#fff' : colors.textSecondary}
+                      />
+                      <ThemedText
+                        type="small"
+                        style={{ color: active ? '#fff' : colors.text }}>
+                        {cat.label}
+                      </ThemedText>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+
+              {loading && (
+                <ActivityIndicator style={styles.spinner} color={colors.textSecondary} />
+              )}
+
+              {!loading && items.length === 0 && (
+                <ThemedText type="small" themeColor="textSecondary" style={styles.empty}>
+                  No challenges found.
+                </ThemedText>
+              )}
+
+              {/* Challenge list */}
+              <View style={styles.cardList}>
+                {items.map((item, index) => (
+                  <ChallengeCard
+                    key={`${item.id}-${index}`}
+                    variant="full"
+                    challenge={item}
+                    onPress={() => router.push(`/challenge/${item.id}`)}
                   />
-                  <ThemedText
-                    type="small"
-                    style={{ color: active ? '#fff' : colors.text }}>
-                    {cat.label}
-                  </ThemedText>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
+                ))}
+              </View>
 
-          {loading && (
-            <ActivityIndicator style={styles.spinner} color={colors.textSecondary} />
-          )}
-
-          {!loading && items.length === 0 && (
-            <ThemedText type="small" themeColor="textSecondary" style={styles.empty}>
-              No challenges found.
-            </ThemedText>
-          )}
-
-          {/* Challenge list */}
-          <View style={styles.cardList}>
-            {items.map((item, index) => (
-              <ChallengeCard
-                key={`${item.id}-${index}`}
-                variant="full"
-                challenge={item}
-                onPress={() => router.push(`/challenge/${item.id}`)}
-              />
-            ))}
-          </View>
-
-          {loadingMore && (
-            <ActivityIndicator style={styles.spinner} color={colors.textSecondary} />
+              {loadingMore && (
+                <ActivityIndicator style={styles.spinner} color={colors.textSecondary} />
+              )}
+            </>
           )}
 
         </ScrollView>
@@ -203,6 +269,7 @@ const styles = StyleSheet.create({
     paddingTop: TabBarWebInset,
     paddingBottom: BottomTabInset + Spacing.four,
   },
+  modes: { marginTop: Spacing.six, marginBottom: Spacing.two },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -210,7 +277,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two + 2,
-    marginTop: Spacing.six,
     marginBottom: Spacing.two,
   },
   searchInput: {

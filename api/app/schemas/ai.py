@@ -21,9 +21,12 @@ class GenerateChallengeRequest(Schema):
 
 
 class AiQuota(Schema):
-    used_today: Count
-    daily_limit: Count | None = Field(description="Null means unlimited (VYRO+)")
-    resets_at: datetime
+    used: Count = Field(description="Drafts delivered in the last window_hours")
+    limit: Count | None = Field(description="Free drafts per window. Null means unlimited (VYRO+)")
+    window_hours: int = Field(ge=1)
+    next_free_at: datetime | None = Field(
+        description="When a draft is available again. Null while drafts are left"
+    )
 
 
 class GeneratedChallenge(Schema):

@@ -4,7 +4,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 
 from app.auth import CurrentPrincipal, CurrentUser
 from app.db import DbSession
@@ -15,6 +15,7 @@ from app.schemas.common import Limit
 from app.schemas.users import Me, MeCreate, MeUpdate, UserPage, UserProfile, UserSummary
 from app.services import difficulty as adaptive
 from app.services import events, progress
+from app.text import escape_like
 
 router = APIRouter(tags=["users"])
 
@@ -137,11 +138,26 @@ def update_me(body: MeUpdate, user: CurrentUser, db: DbSession) -> Me:
 def search_users(
     user: CurrentUser,
     db: DbSession,
-    q: Annotated[str, Query(min_length=1, max_length=64, description="Username prefix")],
+    q: Annotated[
+        str,
+        Query(
+            min_length=1,
+            max_length=64,
+            description="Start of a username, or part of a display name",
+        ),
+    ],
     cursor: str | None = None,
     limit: Limit = 20,
 ) -> UserPage:
-    stmt = select(User).where(User.username.ilike(f"{q.strip().lower()}%"))
+    """Other users whose username starts with `q` or whose display name contains it."""
+    text = escape_like(q.strip().lstrip("@"))
+    stmt = select(User).where(
+        User.id != user.id,
+        or_(
+            User.username.ilike(f"{text}%", escape="\\"),
+            User.display_name.ilike(f"%{text}%", escape="\\"),
+        ),
+    )
     users, next_cursor = page(db, stmt, User.created_at, User.id, cursor, limit)
     return UserPage(
         items=[UserSummary.model_validate(u) for u in users],

@@ -36,7 +36,9 @@ class Settings(BaseSettings):
     ai_generation_model: str = "gemini-3.5-flash-lite"
     ai_verification_model: str = "gemini-3.5-flash"
     # Free users' AI drafts per local day; VYRO+ is unlimited.
-    ai_daily_limit: int = 5
+    # Free users get this many AI drafts per rolling window; VYRO+ is unlimited.
+    ai_free_drafts: int = 2
+    ai_free_window_hours: int = 48
 
     @model_validator(mode="after")
     def _check_prod_safety(self) -> Self:

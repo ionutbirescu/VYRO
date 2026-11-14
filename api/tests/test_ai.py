@@ -1,7 +1,6 @@
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import uuid4
-from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi.testclient import TestClient
@@ -84,8 +83,7 @@ def test_treatment_users_get_a_model_draft(
     assert body["draft"]["title"] == "Couch to 5k"
     # Difficulty was left out, so it's the user's adaptive target (2 with no history).
     assert (body["draft"]["difficulty"], body["draft"]["duration_days"]) == (2, 7)
-    assert body["quota"]["used_today"] == 1
-    assert body["quota"]["daily_limit"] == 5
+    assert (body["quota"]["used"], body["quota"]["limit"]) == (1, 2)
 
     [call] = fake_model.calls
     assert "Run my first 5k" in call["prompt"]
@@ -130,7 +128,7 @@ def test_a_failed_model_answer_falls_back_to_a_template(
     assert response.status_code == 201, response.text
     draft = response.json()["draft"]
     assert (draft["category"], draft["difficulty"], len(draft["tasks"])) == ("fitness", 3, 7)
-    assert response.json()["quota"]["used_today"] == 1
+    assert response.json()["quota"]["used"] == 1
 
     failed, fallback = _generations(db, user)
     assert not failed.schema_valid
@@ -160,17 +158,20 @@ def test_control_users_get_templates_without_calling_the_model(
     assert generation.model == "template"
 
 
-def test_free_users_have_a_daily_limit(
+def test_free_users_get_two_drafts_per_two_days(
     db_client: TestClient, db: Session, user: User, fake_model: FakeModel
 ) -> None:
-    for _ in range(5):
-        assert db_client.post(GENERATE, headers=auth(), json={}).status_code == 201
+    first = db_client.post(GENERATE, headers=auth(), json={}).json()["quota"]
+    assert (first["used"], first["limit"], first["next_free_at"]) == (1, 2, None)
+    last = db_client.post(GENERATE, headers=auth(), json={}).json()["quota"]
+    assert (last["used"], last["window_hours"]) == (2, 48)
+    assert last["next_free_at"] is not None
 
     response = db_client.post(GENERATE, headers=auth(), json={})
 
     assert response.status_code == 429
     assert "VYRO+" in response.json()["detail"]
-    assert len(fake_model.calls) == 5
+    assert len(fake_model.calls) == 2
 
 
 def test_failed_model_calls_dont_use_up_the_quota(
@@ -180,7 +181,7 @@ def test_failed_model_calls_dont_use_up_the_quota(
     db_client.post(GENERATE, headers=auth(), json={})
 
     quota = db_client.get("/v1/ai/quota", headers=auth()).json()
-    assert quota["used_today"] == 1
+    assert quota["used"] == 1
 
 
 def test_vyro_plus_is_unlimited(db_client: TestClient, db: Session, fake_model: FakeModel) -> None:
@@ -188,18 +189,38 @@ def test_vyro_plus_is_unlimited(db_client: TestClient, db: Session, fake_model: 
     for _ in range(7):
         response = db_client.post(GENERATE, headers=auth("plus-user"), json={})
         assert response.status_code == 201
-    assert response.json()["quota"]["daily_limit"] is None
+    assert response.json()["quota"]["limit"] is None
 
 
-def test_quota_resets_at_local_midnight(db_client: TestClient, db: Session) -> None:
-    make_user(db, "night-owl", timezone="Pacific/Auckland")
-    quota = db_client.get("/v1/ai/quota", headers=auth("night-owl")).json()
+def _delivered(db: Session, user: User, hours_ago: float, now: datetime) -> None:
+    db.add(
+        AiGeneration(
+            user_id=user.id,
+            request={},
+            model="template",
+            schema_valid=True,
+            output={},
+            created_at=now - timedelta(hours=hours_ago),
+        )
+    )
+    db.flush()
 
-    zone = ZoneInfo("Pacific/Auckland")
-    tomorrow = datetime.now(zone).date() + timedelta(days=1)
-    resets_at = datetime.fromisoformat(quota["resets_at"]).astimezone(zone)
-    assert (resets_at.date(), resets_at.hour, resets_at.minute) == (tomorrow, 0, 0)
-    assert (quota["used_today"], quota["daily_limit"]) == (0, 5)
+
+def test_drafts_free_up_after_48_hours(db_client: TestClient, db: Session, user: User) -> None:
+    now = datetime.now(UTC)
+    _delivered(db, user, 50, now)  # outside the window
+    _delivered(db, user, 47, now)
+
+    quota = db_client.get("/v1/ai/quota", headers=auth()).json()
+    assert (quota["used"], quota["limit"], quota["next_free_at"]) == (1, 2, None)
+
+    _delivered(db, user, 10, now)
+    quota = db_client.get("/v1/ai/quota", headers=auth()).json()
+
+    # The 47-hour-old draft leaves the window in about an hour.
+    assert quota["used"] == 2
+    free_in = datetime.fromisoformat(quota["next_free_at"]) - now
+    assert timedelta(minutes=59) < free_in <= timedelta(hours=1)
 
 
 def test_rating_a_draft(

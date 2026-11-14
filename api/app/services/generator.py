@@ -8,13 +8,11 @@ are the baseline; "template-fallback" rows replaced a model answer that failed.
 
 import time
 from datetime import datetime, timedelta
-from datetime import time as clock
 from typing import Any
 from uuid import UUID
-from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -48,28 +46,34 @@ same spirit instead.
 """
 
 
-def _local_midnight(user: User, now: datetime) -> datetime:
-    zone = ZoneInfo(user.timezone)
-    return datetime.combine(now.astimezone(zone).date(), clock(), tzinfo=zone)
-
-
 def quota(db: Session, user: User, now: datetime) -> AiQuota:
-    """Drafts delivered since the user's local midnight. Failed model calls don't count."""
-    day_start = _local_midnight(user, now)
-    used = db.scalar(
-        select(func.count())
-        .select_from(AiGeneration)
-        .where(
-            AiGeneration.user_id == user.id,
-            AiGeneration.created_at >= day_start,
-            AiGeneration.output.is_not(None),
+    """Drafts delivered in the last window (48 hours by default). Failed model calls don't count.
+
+    A draft frees its slot when it leaves the window, so a user at the limit gets the next one
+    when enough of their oldest drafts have aged out.
+    """
+    settings = get_settings()
+    window = timedelta(hours=settings.ai_free_window_hours)
+    delivered = list(
+        db.scalars(
+            select(AiGeneration.created_at)
+            .where(
+                AiGeneration.user_id == user.id,
+                AiGeneration.created_at > now - window,
+                AiGeneration.output.is_not(None),
+            )
+            .order_by(AiGeneration.created_at)
         )
     )
     plus = user.plus_until is not None and user.plus_until > now
+    limit = None if plus else settings.ai_free_drafts
+    blocked = limit is not None and len(delivered) >= limit
     return AiQuota(
-        used_today=used or 0,
-        daily_limit=None if plus else get_settings().ai_daily_limit,
-        resets_at=day_start + timedelta(days=1),
+        used=len(delivered),
+        limit=limit,
+        window_hours=settings.ai_free_window_hours,
+        # Below the limit again once the (used - limit + 1) oldest drafts have left the window.
+        next_free_at=delivered[len(delivered) - limit] + window if blocked and limit else None,
     )
 
 
@@ -192,11 +196,11 @@ def generate(
     db: Session, user: User, body: GenerateChallengeRequest, now: datetime
 ) -> GeneratedChallenge:
     current = quota(db, user, now)
-    if current.daily_limit is not None and current.used_today >= current.daily_limit:
+    if current.next_free_at is not None:
         raise HTTPException(
             status.HTTP_429_TOO_MANY_REQUESTS,
-            f"You've used today's {current.daily_limit} AI drafts. "
-            "They reset at midnight, and VYRO+ makes them unlimited.",
+            f"You've used your {current.limit} free AI drafts for the last "
+            f"{current.window_hours} hours. VYRO+ makes them unlimited.",
         )
     level = body.difficulty or adaptive.target(db, user, now)
     request = {**body.model_dump(mode="json"), "resolved_difficulty": level}
@@ -228,7 +232,7 @@ def generate(
     return GeneratedChallenge(
         generation_id=generation.id,
         draft=ChallengeDraft.model_validate(generation.output),
-        quota=current.model_copy(update={"used_today": current.used_today + 1}),
+        quota=quota(db, user, now),
     )
 
 

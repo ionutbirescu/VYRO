@@ -6,6 +6,7 @@ from app import __version__
 from app.auth import AUTH_RESPONSES
 from app.config import get_settings
 from app.routers import (
+    activity,
     ai,
     challenges,
     dev_uploads,
@@ -59,6 +60,7 @@ def create_app() -> FastAPI:
         ai,
         recommendations,
         leaderboard,
+        activity,
         gamification,
         events,
         shop,

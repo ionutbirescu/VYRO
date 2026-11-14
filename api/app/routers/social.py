@@ -36,6 +36,14 @@ def _follow_status(db, me_id: UUID, target_id: UUID) -> FollowStatus:
     )
 
 
+@router.get("/users/{user_id}/follow")
+def get_follow_status(user_id: UUID, user: CurrentUser, db: DbSession) -> FollowStatus:
+    """Whether you follow this user, and whether they follow you."""
+    if db.get(User, user_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+    return _follow_status(db, user.id, user_id)
+
+
 @router.put("/users/{user_id}/follow")
 def follow_user(user_id: UUID, user: CurrentUser, db: DbSession) -> FollowStatus:
     if user_id == user.id:

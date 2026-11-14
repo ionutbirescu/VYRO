@@ -49,3 +49,47 @@ def test_me_shows_a_lapsed_streak_as_zero(db_client: TestClient, db: Session, us
 def test_unregistered_users_must_register(db_client: TestClient) -> None:
     response = db_client.get("/v1/me", headers=auth("newcomer"))
     assert (response.status_code, response.json()["detail"]) == (403, "registration_required")
+
+
+def test_search_finds_others_by_username_or_name(db_client: TestClient, db: Session) -> None:
+    for uid, username, name in [
+        ("test-user", "tester", "Ana Tester"),
+        ("maria", "maria_p", "Maria Popescu"),
+        ("mario", "mario", "Mario Rossi"),
+        ("radu", "radu", "Radu Pop"),
+    ]:
+        make_user(db, uid, username).display_name = name
+    db.flush()
+
+    def search(q: str) -> list[str]:
+        response = db_client.get("/v1/users", headers=auth(), params={"q": q})
+        assert response.status_code == 200, response.text
+        return sorted(u["username"] for u in response.json()["items"])
+
+    assert search("mar") == ["maria_p", "mario"]
+    assert search("@MARIA") == ["maria_p"]
+    assert search("pop") == ["maria_p", "radu"]  # part of a display name
+    assert search("tester") == []  # never yourself
+    assert search("maria_") == ["maria_p"]
+    assert search("mari_") == []  # a literal underscore, not a wildcard for "mario"
+
+
+def test_follow_status(db_client: TestClient, db: Session, user: User) -> None:
+    maria, radu = make_user(db, "maria"), make_user(db, "radu")
+    db.add_all(
+        [
+            Follow(follower_id=user.id, followee_id=maria.id),
+            Follow(follower_id=maria.id, followee_id=user.id),
+            Follow(follower_id=radu.id, followee_id=user.id),
+        ]
+    )
+    db.flush()
+
+    def status(other: User) -> tuple[bool, bool, bool]:
+        response = db_client.get(f"/v1/users/{other.id}/follow", headers=auth())
+        assert response.status_code == 200, response.text
+        body = response.json()
+        return body["following"], body["followed_by"], body["is_friend"]
+
+    assert status(maria) == (True, True, True)
+    assert status(radu) == (False, True, False)

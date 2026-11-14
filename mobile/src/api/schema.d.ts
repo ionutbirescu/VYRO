@@ -50,7 +50,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Search Users */
+        /**
+         * Search Users
+         * @description Other users whose username starts with `q` or whose display name contains it.
+         */
         get: operations["search_users"];
         put?: never;
         post?: never;
@@ -84,7 +87,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get Follow Status
+         * @description Whether you follow this user, and whether they follow you.
+         */
+        get: operations["get_follow_status"];
         /** Follow User */
         put: operations["follow_user"];
         post?: never;
@@ -430,6 +437,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/challenges/{challenge_id}/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Challenge Activity
+         * @description Approved proofs in this challenge, newest first.
+         */
+        get: operations["get_challenge_activity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/proofs/{proof_id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Comments */
+        get: operations["list_comments"];
+        put?: never;
+        /** Create Comment */
+        post: operations["create_comment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/comments/{comment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Comment
+         * @description Delete a comment you wrote, or any comment under your own proof.
+         */
+        delete: operations["delete_comment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/users/{user_id}/achievements": {
         parameters: {
             query?: never;
@@ -591,20 +656,70 @@ export interface components {
          * @enum {string}
          */
         AcquiredVia: "earned" | "purchased";
-        /** AiQuota */
-        AiQuota: {
-            /** Used Today */
-            used_today: number;
+        /**
+         * ActivityItem
+         * @description One approved proof: someone completed a day of the challenge.
+         */
+        ActivityItem: {
             /**
-             * Daily Limit
-             * @description Null means unlimited (VYRO+)
+             * Proof Id
+             * Format: uuid
              */
-            daily_limit: number | null;
+            proof_id: string;
+            user: components["schemas"]["UserSummary"];
+            /** Day Number */
+            day_number: number;
+            /** Task Title */
+            task_title: string;
             /**
-             * Resets At
+             * Completed At
              * Format: date-time
              */
-            resets_at: string;
+            completed_at: string;
+            /**
+             * Image Url
+             * @description Short-lived photo URL. Only for users who joined the challenge
+             */
+            image_url: string | null;
+            /**
+             * Caption
+             * @description Only for users who joined the challenge
+             */
+            caption: string | null;
+            /** Comment Count */
+            comment_count: number;
+        };
+        /** ActivityPage */
+        ActivityPage: {
+            /** Items */
+            items: components["schemas"]["ActivityItem"][];
+            /**
+             * Can View Proofs
+             * @description The current user joined the challenge, so items include photos and captions
+             */
+            can_view_proofs: boolean;
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** AiQuota */
+        AiQuota: {
+            /**
+             * Used
+             * @description Drafts delivered in the last window_hours
+             */
+            used: number;
+            /**
+             * Limit
+             * @description Free drafts per window. Null means unlimited (VYRO+)
+             */
+            limit: number | null;
+            /** Window Hours */
+            window_hours: number;
+            /**
+             * Next Free At
+             * @description When a draft is available again. Null while drafts are left
+             */
+            next_free_at: string | null;
         };
         /**
          * AiVerdict
@@ -816,6 +931,47 @@ export interface components {
              * @description When it happened on the device
              */
             client_ts?: string | null;
+        };
+        /** Comment */
+        Comment: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Proof Id
+             * Format: uuid
+             */
+            proof_id: string;
+            user: components["schemas"]["UserSummary"];
+            /** Body */
+            body: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Can Delete
+             * @description The current user wrote it, or owns the proof
+             */
+            can_delete: boolean;
+        };
+        /** CommentCreate */
+        CommentCreate: {
+            /** Body */
+            body: string;
+        };
+        /** CommentPage */
+        CommentPage: {
+            /**
+             * Items
+             * @description Newest first
+             */
+            items: components["schemas"]["Comment"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
         };
         /** DisputeCreate */
         DisputeCreate: {
@@ -1267,7 +1423,7 @@ export interface components {
             target_type: components["schemas"]["ReportTarget"];
             /**
              * Target Id
-             * @description UUID for users, challenges and proofs; Firestore id for chat messages
+             * @description UUID for users, challenges, proofs and comments; Firestore id for messages
              */
             target_id: string;
             /** Reason */
@@ -1285,7 +1441,7 @@ export interface components {
          * ReportTarget
          * @enum {string}
          */
-        ReportTarget: "user" | "challenge" | "proof" | "message";
+        ReportTarget: "user" | "challenge" | "proof" | "message" | "comment";
         /**
          * Rewards
          * @description What an action earned, for the app's celebration UI.
@@ -1643,7 +1799,7 @@ export interface operations {
     search_users: {
         parameters: {
             query: {
-                /** @description Username prefix */
+                /** @description Start of a username, or part of a display name */
                 q: string;
                 cursor?: string | null;
                 limit?: number;
@@ -1710,6 +1866,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserProfile"];
+                };
+            };
+            /** @description Missing, invalid or expired bearer token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `registration_required`: signed in but no profile yet; call POST /v1/me */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_follow_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowStatus"];
                 };
             };
             /** @description Missing, invalid or expired bearer token */
@@ -2729,6 +2934,210 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Leaderboard"];
                 };
+            };
+            /** @description Missing, invalid or expired bearer token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `registration_required`: signed in but no profile yet; call POST /v1/me */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_challenge_activity: {
+        parameters: {
+            query?: {
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                challenge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityPage"];
+                };
+            };
+            /** @description Missing, invalid or expired bearer token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `registration_required`: signed in but no profile yet; call POST /v1/me */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_comments: {
+        parameters: {
+            query?: {
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                proof_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentPage"];
+                };
+            };
+            /** @description Missing, invalid or expired bearer token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `registration_required`: signed in but no profile yet; call POST /v1/me */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_comment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proof_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comment"];
+                };
+            };
+            /** @description Missing, invalid or expired bearer token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `registration_required`: signed in but no profile yet; call POST /v1/me */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_comment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Missing, invalid or expired bearer token */
             401: {
