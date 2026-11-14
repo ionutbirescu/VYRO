@@ -10,6 +10,8 @@ import {
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -25,7 +27,7 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
 import { useTheme } from '@/hooks/use-theme';
-import { db } from '@/lib/firebase';
+import { auth, chatAccount, db } from '@/lib/firebase';
 
 type ChatMessage = {
   id: string;
@@ -42,35 +44,63 @@ export default function ChatScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [status, setStatus] = useState<'connecting' | 'ready' | 'unavailable'>('connecting');
   const listRef = useRef<FlatList<ChatMessage>>(null);
 
   const profile = state.status === 'ready' ? state.profile : null;
 
   useEffect(() => {
     if (!challenge_id) return;
-    const q = query(
-      collection(db, 'chats', challenge_id, 'messages'),
-      orderBy('created_at', 'asc'),
-    );
-    return onSnapshot(q, (snap) => {
-      setMessages(
-        snap.docs.map((doc) => ({ id: doc.id, ...(doc.data() as Omit<ChatMessage, 'id'>) })),
-      );
-    });
+    let unsubscribe: (() => void) | undefined;
+    let cancelled = false;
+    chatAccount()
+      .then((account) => {
+        if (cancelled) return;
+        if (!account) {
+          setStatus('unavailable');
+          return;
+        }
+        const q = query(
+          collection(db, 'chats', challenge_id, 'messages'),
+          orderBy('created_at', 'asc'),
+        );
+        unsubscribe = onSnapshot(
+          q,
+          (snap) => {
+            setStatus('ready');
+            setMessages(
+              snap.docs.map((doc) => ({ id: doc.id, ...(doc.data() as Omit<ChatMessage, 'id'>) })),
+            );
+          },
+          // E.g. no network, or Firestore's rules turned the account away.
+          () => setStatus('unavailable'),
+        );
+      })
+      .catch(() => !cancelled && setStatus('unavailable'));
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [challenge_id]);
 
   async function handleSend() {
     const msg = text.trim();
-    if (!msg || !profile || sending) return;
+    const account = auth.currentUser;
+    if (!msg || !profile || !account || sending) return;
     setText('');
     setSending(true);
     try {
       await addDoc(collection(db, 'chats', challenge_id, 'messages'), {
         uid: profile.id,
+        // Firestore's rules check this is the account sending it.
+        auth_uid: account.uid,
         display_name: profile.display_name,
         text: msg,
         created_at: serverTimestamp(),
       });
+    } catch {
+      setText(msg);
+      Alert.alert('Message not sent', 'Check your connection and try again.');
     } finally {
       setSending(false);
     }
@@ -115,9 +145,15 @@ export default function ChatScreen() {
             );
           }}
           ListEmptyComponent={
-            <ThemedText themeColor="textSecondary" style={styles.empty}>
-              No messages yet. Say hi!
-            </ThemedText>
+            status === 'connecting' ? (
+              <ActivityIndicator style={styles.empty} color={colors.textSecondary} />
+            ) : (
+              <ThemedText themeColor="textSecondary" style={styles.empty}>
+                {status === 'unavailable'
+                  ? "Chat isn't available right now. Try again later."
+                  : 'No messages yet. Say hi!'}
+              </ThemedText>
+            )
           }
         />
         <SafeAreaView edges={['bottom']}>
@@ -146,7 +182,7 @@ export default function ChatScreen() {
                 { backgroundColor: colors.text, opacity: text.trim() ? 1 : 0.35 },
               ]}
               onPress={handleSend}
-              disabled={!text.trim() || sending}>
+              disabled={!text.trim() || sending || status !== 'ready'}>
               <ThemedText style={{ color: colors.background, fontWeight: '700', fontSize: 18 }}>
                 ↑
               </ThemedText>

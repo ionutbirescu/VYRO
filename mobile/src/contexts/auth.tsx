@@ -77,6 +77,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return onAuthStateChanged(auth, async (user) => {
+      if (user?.isAnonymous) {
+        // Left over from the dev build's chat (lib/firebase chatAccount); it's not a VYRO login.
+        await firebaseSignOut(auth);
+        return;
+      }
       if (!user) {
         setState({ status: 'unauthenticated' });
         return;
