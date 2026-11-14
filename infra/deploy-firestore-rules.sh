@@ -12,7 +12,8 @@ PROJECT_ID=${PROJECT_ID:-vyro-app-2026}
 RULES=$(dirname "$0")/firestore.rules
 API=https://firebaserules.googleapis.com/v1/projects/$PROJECT_ID
 RELEASE=projects/$PROJECT_ID/releases/cloud.firestore
-PYTHON=$(command -v python3 || command -v python)
+# The first Python that runs; on Windows "python3" can be a Microsoft Store placeholder.
+for PYTHON in python3 python; do "$PYTHON" -c "" 2>/dev/null && break; done
 
 TOKEN=$(gcloud auth print-access-token)
 call() {
