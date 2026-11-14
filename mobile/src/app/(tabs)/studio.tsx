@@ -315,10 +315,11 @@ function Label({ children }: { children: string }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  safeArea: { flex: 1, alignItems: 'center' },
+  safeArea: { flex: 1 },
   scroll: {
     width: '100%',
     maxWidth: MaxContentWidth,
+    alignSelf: 'center',
     paddingHorizontal: Spacing.four,
     paddingBottom: BottomTabInset + Spacing.four,
     gap: Spacing.three,

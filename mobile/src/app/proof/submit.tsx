@@ -360,11 +360,12 @@ export default function SubmitProofScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  safeArea: { flex: 1, alignItems: 'center' },
+  safeArea: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.three, padding: Spacing.four },
   scroll: {
     width: '100%',
     maxWidth: MaxContentWidth,
+    alignSelf: 'center',
     paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.six,
     paddingTop: Spacing.three,

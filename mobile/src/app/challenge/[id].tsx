@@ -277,11 +277,12 @@ export default function ChallengeScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  safeArea: { flex: 1, alignItems: 'center' },
+  safeArea: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: {
     width: '100%',
     maxWidth: MaxContentWidth,
+    alignSelf: 'center',
     paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.six,
     gap: Spacing.three,
