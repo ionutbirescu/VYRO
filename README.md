@@ -18,10 +18,12 @@ VYRO is a mobile social app. Users take on AI-generated challenges alone or with
 ## Quick start
 
 ```sh
-docker compose up -d db
-# API: see api/README.md
-cd mobile && npm install && npx expo start    # scan the QR code with Expo Go
+docker compose up -d                                   # Postgres and the API on :8000; they restart with Docker
+docker compose exec api python scripts/seed.py --uid dev-<you>   # once: challenges, users, progress
+cd mobile && npm install && npx expo start             # scan the QR code with Expo Go
 ```
+
+In `mobile/.env`, set `EXPO_PUBLIC_DEV_UID=dev-<you>` and leave `EXPO_PUBLIC_API_URL` unset: the app then finds the local API on its own (see [`mobile/.env.example`](mobile/.env.example)). If the phone can't reach it, allow Docker through the Windows firewall for private networks.
 
 ## How we work
 
