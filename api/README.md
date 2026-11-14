@@ -7,10 +7,20 @@ FastAPI backend for the VYRO app: Python 3.12, SQLAlchemy 2 and Alembic on Postg
 
 ## Run it locally
 
-You need Docker and Python 3.12.
+The quickest way is Docker, which runs the API next to Postgres and keeps both running:
 
 ```sh
-docker compose up -d db            # from the repo root: Postgres 17, plus a vyro_test database
+docker compose up -d                                         # from the repo root; http://localhost:8000/docs
+docker compose exec api python scripts/seed.py --uid dev-<you>   # realistic data for your dev user
+docker compose logs -f api                                   # its log
+```
+
+It reloads when you edit `app/`, and applies new migrations when it restarts (`docker compose restart api`). After changing dependencies, rebuild it with `docker compose up -d --build api`. `scripts/seed.py --reset` empties the local database first. The seed adds 61 built-in challenges (39 from the templates, 22 hand-written in `scripts/seed_challenges.py`), your user (Alex for the default `dev-user`) and seven more (`dev-maria`, `dev-radu`, `dev-elena`, `dev-andrei`, `dev-ioana`, `dev-alice`, `dev-bob`) with three weeks of progress, so you can also open the app as any of them. Gemini is off in the container: drafts come from templates and proofs pass unscored.
+
+To run the API from your own venv instead (for a debugger, or Gemini through your gcloud login), you need Python 3.12:
+
+```sh
+docker compose up -d db && docker compose stop api   # Postgres only, so port 8000 is free
 cd api
 python -m venv .venv
 .venv/bin/pip install -c requirements.lock -e ".[dev]"   # Windows: .venv\Scripts\pip
@@ -18,7 +28,7 @@ alembic upgrade head
 uvicorn app.main:app --reload      # http://localhost:8000/docs
 ```
 
-To reach the API from a phone running Expo Go, add `--host 0.0.0.0` and point the app at your computer's LAN IP (see [`mobile/.env.example`](../mobile/.env.example)).
+To reach it from a phone running Expo Go, add `--host 0.0.0.0`. The app finds it on port 8000, like the Docker one.
 
 ### Configuration
 
@@ -133,7 +143,7 @@ export VYRO_PROOF_BUCKET=vyro-app-2026-proofs   # analysis.labels downloads phot
 
 | Router (`app/routers/`) | Endpoints | Owner |
 |---|---|---|
-| `me.py` | `/v1/me`, `/v1/users` | Member B |
+| `me.py` | `/v1/me`, `/v1/users` | Member B (`GET /v1/me` built early by A, for local data) |
 | `social.py` | follow, followers, friends | Member B |
 | `shop.py` | sandbox shop, entitlements | Member B |
 | `challenges.py` | browse, create, join, progress | Member A |

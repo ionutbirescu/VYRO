@@ -1,4 +1,6 @@
-# Local development database. Start with: docker compose up -d db
+# Local development: Postgres, and the API running against it.
+#   docker compose up -d          # both; they then restart with Docker, so this is a one-time step
+#   docker compose up -d db       # only the database (for pytest, or uvicorn from your venv)
 services:
   db:
     image: postgres:17-alpine
@@ -17,6 +19,33 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
+
+  # The API on http://localhost:8000, so the app can use real data without a mock server.
+  # It applies migrations on start and reloads when files in api/app change. After changing
+  # dependencies in pyproject.toml, rebuild it: docker compose up -d --build api
+  api:
+    build: ./api
+    # Root, so it can write proof photos to the mounted api/.uploads. Local only.
+    user: root
+    command: sh -c "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    environment:
+      VYRO_ENV: local
+      VYRO_AUTH_MODE: dev
+      VYRO_DATABASE_URL: postgresql+psycopg://vyro:vyro@db:5432/vyro
+      # Changes made on Windows don't reach the container as file events, so poll for them.
+      WATCHFILES_FORCE_POLLING: "true"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./api/app:/srv/app
+      - ./api/alembic:/srv/alembic
+      - ./api/scripts:/srv/scripts
+      - ./api/.uploads:/srv/.uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   pgdata:
