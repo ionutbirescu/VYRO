@@ -8,7 +8,12 @@
     "scheme": "vyro",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.ionutbirescu.vyro",
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -35,12 +40,26 @@
       ],
       "expo-font",
       "expo-image",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "VYRO uses the camera so you can photograph proof that you completed today's task.",
+          "photosPermission": "VYRO opens your photos so you can choose a picture as proof that you completed today's task.",
+          "microphonePermission": false
+        }
+      ],
       "expo-status-bar",
       "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "90f8e612-7947-4c01-ad9e-f7c2cf872ae0"
+      }
+    },
+    "owner": "biri28"
   }
 }

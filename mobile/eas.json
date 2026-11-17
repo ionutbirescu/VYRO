@@ -1,0 +1,18 @@
+{
+  "cli": {
+    "version": ">= 18.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "production": {
+      "environment": "production",
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://vyro-api-2aczsavhwq-ew.a.run.app"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

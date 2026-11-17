@@ -25,6 +25,27 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## TestFlight builds
+
+iOS builds run on EAS (Expo's build service), so no Mac is needed. The project is
+[@biri28/vyro](https://expo.dev/accounts/biri28/projects/vyro), and the bundle ID is
+`com.ionutbirescu.vyro`.
+
+```bash
+npx eas-cli login                                        # the Expo account that owns the project
+npx eas-cli build -p ios --profile production --auto-submit
+```
+
+The production profile in `eas.json` points the app at the deployed API. The Firebase settings come
+from the project's EAS environment variables (`npx eas-cli env:list --environment production`), not
+from `.env`. Release builds never use `EXPO_PUBLIC_DEV_UID`, so they always sign in with Firebase.
+EAS counts build numbers up by itself. Raise `version` in `app.json` for a new release.
+
+The first build asks for an Apple Developer account login, then creates the signing certificate
+and provisioning profile and keeps them on EAS. `--auto-submit` uploads the build to App Store
+Connect, and creates the app there the first time. Apple processes it for a few minutes, and then
+it appears under TestFlight.
+
 ## Get a fresh project
 
 When you're ready, run:
