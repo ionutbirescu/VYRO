@@ -1,0 +1,38 @@
+rules_version = '2';
+
+// Deployed with infra/deploy-firestore-rules.sh. Firestore's only use is challenge chat
+// (mobile/src/app/challenge/chat.tsx); everything else lives in Postgres behind the API.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // chats/{challengeId}/messages/{messageId}
+    // Anyone signed in to Firebase can read a chat (the dev build signs in anonymously).
+    // Firestore can't see challenge membership, which is in Postgres, so it doesn't check it.
+    match /chats/{challengeId}/messages/{messageId} {
+      allow read: if request.auth != null;
+
+      // auth_uid ties each message to its sender's Firebase account, so nobody can post as
+      // someone else's account. uid (the VYRO user id) and display_name are what the app shows.
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['uid', 'auth_uid', 'display_name', 'text', 'created_at'])
+        && request.resource.data.keys().hasAll(['uid', 'auth_uid', 'display_name', 'text', 'created_at'])
+        && request.resource.data.auth_uid == request.auth.uid
+        && request.resource.data.uid is string
+        && request.resource.data.uid.size() <= 64
+        && request.resource.data.display_name is string
+        && request.resource.data.display_name.size() <= 64
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 500
+        && request.resource.data.created_at == request.time;
+
+      // Messages can't be edited; their sender can delete them.
+      allow delete: if request.auth != null && resource.data.auth_uid == request.auth.uid;
+    }
+
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
