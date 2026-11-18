@@ -5,11 +5,12 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { AccentColor, BottomTabInset, MaxContentWidth, Spacing, StreakColor, SuccessColor, TabBarWebInset } from '@/constants/theme';
+import { AccentColor, BottomTabInset, MaxContentWidth, Spacing, StreakColor } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
 import { type ThemePreference, useThemePreference } from '@/contexts/theme-preference';
 import { useTheme } from '@/hooks/use-theme';
+
+const HEADER_GREEN = '#1a3d2b';
 
 const THEME_OPTIONS: { value: ThemePreference; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { value: 'light', label: 'Light', icon: 'sunny-outline' },
@@ -28,35 +29,34 @@ export default function ProfileScreen() {
   const xpPct = Math.min(p.xp / Math.max(p.next_level_xp, 1), 1);
 
   return (
-    <ThemedView style={styles.root}>
-      <SafeAreaView style={styles.safeArea}>
+    <View style={styles.root}>
+      {/* Decorative circles */}
+      <View style={[styles.dec, { width: 220, height: 220, top: -60, right: -60 }]} pointerEvents="none" />
+      <View style={[styles.dec, { width: 100, height: 100, top: 30, right: 60 }]} pointerEvents="none" />
+
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.headerArea}>
+        <View style={styles.header}>
+          <LinearGradient
+            colors={[AccentColor, '#a78bfa']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.avatarRing}>
+            <View style={styles.avatarInner}>
+              <ThemedText style={styles.avatarLetter}>
+                {p.display_name[0].toUpperCase()}
+              </ThemedText>
+            </View>
+          </LinearGradient>
+          <ThemedText style={styles.displayName}>{p.display_name}</ThemedText>
+          <ThemedText style={styles.username}>@{p.username}</ThemedText>
+          {p.bio && <ThemedText style={styles.bio}>{p.bio}</ThemedText>}
+        </View>
+      </SafeAreaView>
+
+      <View style={styles.sheet}>
         <ScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}>
-
-          {/* Avatar */}
-          <View style={styles.avatarSection}>
-            <LinearGradient
-              colors={[AccentColor, '#a78bfa']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.avatarRing}>
-              <View style={[styles.avatarInner, { backgroundColor: colors.background }]}>
-                <View style={[styles.avatar, { backgroundColor: colors.backgroundElement }]}>
-                  <ThemedText style={styles.avatarLetter}>
-                    {p.display_name[0].toUpperCase()}
-                  </ThemedText>
-                </View>
-              </View>
-            </LinearGradient>
-            <ThemedText style={styles.displayName}>{p.display_name}</ThemedText>
-            <ThemedText themeColor="textSecondary">@{p.username}</ThemedText>
-            {p.bio && (
-              <ThemedText themeColor="textSecondary" style={styles.bio}>
-                {p.bio}
-              </ThemedText>
-            )}
-          </View>
 
           {/* XP Progress */}
           <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
@@ -84,7 +84,7 @@ export default function ProfileScreen() {
 
           {/* Stats Grid */}
           <View style={styles.grid}>
-            <StatCard icon="flame" iconColor="#f97316" value={p.current_streak} label="day streak" />
+            <StatCard icon="flame" iconColor={StreakColor} value={p.current_streak} label="day streak" />
             <StatCard icon="calendar-outline" iconColor={AccentColor} value={p.longest_streak} label="longest streak" />
             <StatCard icon="checkmark-circle-outline" iconColor="#22c55e" value={p.completed_challenges} label="completed" />
             <StatCard
@@ -138,8 +138,8 @@ export default function ProfileScreen() {
           </Pressable>
 
         </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+      </View>
+    </View>
   );
 }
 
@@ -178,77 +178,56 @@ function StatCard({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  safeArea: { flex: 1 },
-  scroll: {
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
+  root: { flex: 1, backgroundColor: HEADER_GREEN },
+  dec: { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)' },
+  headerArea: { backgroundColor: HEADER_GREEN },
+  header: {
     paddingHorizontal: Spacing.four,
-    paddingTop: TabBarWebInset,
-    paddingBottom: BottomTabInset + Spacing.four,
-    gap: Spacing.three,
-  },
-  avatarSection: {
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.four,
     alignItems: 'center',
-    paddingTop: Spacing.four,
     gap: Spacing.one,
   },
   avatarRing: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.two,
   },
   avatarInner: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: HEADER_GREEN,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatar: {
-    width: 86,
-    height: 86,
-    borderRadius: 43,
-    alignItems: 'center',
-    justifyContent: 'center',
+  avatarLetter: { fontSize: 32, fontWeight: '700', color: '#fff' },
+  displayName: { fontSize: 20, fontWeight: '700', color: '#fff', textAlign: 'center' },
+  username: { fontSize: 13, color: 'rgba(255,255,255,0.65)' },
+  bio: { fontSize: 13, color: 'rgba(255,255,255,0.6)', textAlign: 'center', paddingHorizontal: Spacing.four },
+  sheet: {
+    flex: 1,
+    backgroundColor: '#F4F4F8',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
   },
-  avatarLetter: {
-    fontSize: 36,
-    fontWeight: '700',
-  },
-  displayName: {
-    fontSize: 22,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  bio: {
-    textAlign: 'center',
-    marginTop: Spacing.one,
+  scroll: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
     paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.four,
+    paddingBottom: BottomTabInset + Spacing.four,
+    gap: Spacing.three,
   },
-  card: {
-    borderRadius: 16,
-    padding: Spacing.three,
-    gap: Spacing.two,
-  },
-  xpHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  levelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  levelText: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
+  card: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
+  xpHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  levelRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  levelText: { fontSize: 15, fontWeight: '700' },
   plusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -258,48 +237,15 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 99,
   },
-  plusText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#f59e0b',
-  },
-  xpTrack: {
-    height: 8,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  xpFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  statCard: {
-    flex: 1,
-    minWidth: '45%',
-    borderRadius: 16,
-    padding: Spacing.three,
-    gap: Spacing.one,
-  },
+  plusText: { fontSize: 11, fontWeight: '700', color: '#f59e0b' },
+  xpTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
+  xpFill: { height: '100%', borderRadius: 4 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  statCard: { flex: 1, minWidth: '45%', borderRadius: 16, padding: Spacing.three, gap: Spacing.one },
   statChevron: { marginLeft: 'auto' },
-  statIconRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-  },
-  statValue: {
-    fontSize: 26,
-    fontWeight: '700',
-  },
-  themeRow: {
-    flexDirection: 'row',
-    borderRadius: 14,
-    padding: 4,
-    gap: 4,
-  },
+  statIconRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  statValue: { fontSize: 26, fontWeight: '700' },
+  themeRow: { flexDirection: 'row', borderRadius: 14, padding: 4, gap: 4 },
   themeBtn: {
     flex: 1,
     borderRadius: 10,

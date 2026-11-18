@@ -68,30 +68,32 @@ export function ChallengeCard(props: ChallengeCardProps) {
 
     return (
       <AnimCard onPress={onPress} style={shadowStyle}>
-        <View style={[styles.compact, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
-          <ThemedText type="small" themeColor="textSecondary" style={styles.compactCategory}>
+        <View style={[styles.compact, { backgroundColor: diff.color }]}>
+          {/* Decorative circle */}
+          <View style={styles.compactDec} />
+          <ThemedText style={styles.compactCategory}>
             {challenge.category.replace('_', ' ')}
           </ThemedText>
-          <ThemedText type="smallBold" numberOfLines={2} style={styles.compactTitle}>
+          <ThemedText numberOfLines={2} style={styles.compactTitle}>
             {challenge.title}
           </ThemedText>
 
           {progress ? (
             <>
-              <View style={[styles.progressTrack, { backgroundColor: colors.backgroundSelected }]}>
+              <View style={styles.progressTrack}>
                 <View
                   style={[
                     styles.progressFill,
-                    { width: `${pct * 100}%` as `${number}%`, backgroundColor: diff.color },
+                    { width: `${pct * 100}%` as `${number}%` },
                   ]}
                 />
               </View>
-              <ThemedText type="small" themeColor="textSecondary">
+              <ThemedText style={styles.compactSub}>
                 Day {progress.completed + 1} of {progress.total}
               </ThemedText>
             </>
           ) : (
-            <ThemedText type="small" themeColor="textSecondary">
+            <ThemedText style={styles.compactSub}>
               {challenge.duration_days === 1 ? '1 day' : `${challenge.duration_days} days`}
             </ThemedText>
           )}
@@ -166,26 +168,46 @@ const shadowStyle = Platform.select({
 const styles = StyleSheet.create({
   /* Compact */
   compact: {
-    width: 200,
-    borderRadius: 14,
-    borderWidth: 1,
+    width: 160,
+    height: 172,
+    borderRadius: 20,
     padding: Spacing.three,
     gap: Spacing.two,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  compactDec: {
+    position: 'absolute',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    bottom: -24,
+    right: -24,
   },
   compactCategory: {
     textTransform: 'capitalize',
-    fontSize: 12,
+    fontSize: 11,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.75)',
   },
   compactTitle: {
     fontSize: 14,
-    lineHeight: 20,
+    fontWeight: '700',
+    lineHeight: 19,
+    color: '#fff',
   },
   progressTrack: {
     height: 4,
     borderRadius: 2,
     overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.3)',
   },
-  progressFill: { height: '100%', borderRadius: 2 },
+  progressFill: { height: '100%', borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.9)' },
+  compactSub: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.75)',
+  },
 
   /* Full */
   full: {

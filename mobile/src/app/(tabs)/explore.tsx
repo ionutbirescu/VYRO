@@ -19,9 +19,10 @@ import { ChallengeCard } from '@/components/challenge-card';
 import { Segmented } from '@/components/segmented';
 import { UserRow } from '@/components/user-row';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { AccentColor, BottomTabInset, MaxContentWidth, Spacing, TabBarWebInset } from '@/constants/theme';
+import { AccentColor, BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+
+const HEADER_GREEN = '#1a3d2b';
 
 type CategoryKey = 'fitness' | 'nutrition' | 'mindfulness' | 'sleep' | 'learning' | 'reading' | 'creativity' | 'productivity' | 'social' | 'outdoors' | 'sustainability' | 'finance' | 'digital_detox' | undefined;
 
@@ -39,11 +40,10 @@ const CATEGORIES: { key: CategoryKey; label: string; icon: keyof typeof Ionicons
   { key: 'outdoors', label: 'Outdoors', icon: 'leaf-outline' },
   { key: 'sustainability', label: 'Sustainability', icon: 'refresh-circle-outline' },
   { key: 'finance', label: 'Finance', icon: 'wallet-outline' },
-  { key: 'digital_detox', label: 'Digital Detox', icon: 'eye-off-outline' },
+  { key: 'digital_detox', label: 'Detox', icon: 'eye-off-outline' },
 ];
 
 type Mode = 'challenges' | 'people';
-
 const MODES: { value: Mode; label: string }[] = [
   { value: 'challenges', label: 'Challenges' },
   { value: 'people', label: 'People' },
@@ -65,18 +65,11 @@ export default function ExploreScreen() {
     async (q: string, cat: CategoryKey, nextCursor?: string) => {
       const isFirst = !nextCursor;
       isFirst ? setLoading(true) : setLoadingMore(true);
-
       const { data } = await api.GET('/v1/challenges', {
         params: {
-          query: {
-            q: q.trim() || undefined,
-            category: cat ?? undefined,
-            limit: 20,
-            cursor: nextCursor,
-          },
+          query: { q: q.trim() || undefined, category: cat ?? undefined, limit: 20, cursor: nextCursor },
         },
       });
-
       if (data) {
         setItems((prev) => (isFirst ? data.items : [...prev, ...data.items]));
         setCursor(data.next_cursor);
@@ -84,7 +77,6 @@ export default function ExploreScreen() {
         setItems([]);
         setCursor(undefined);
       }
-
       isFirst ? setLoading(false) : setLoadingMore(false);
     },
     [],
@@ -92,11 +84,7 @@ export default function ExploreScreen() {
 
   const loadPeople = useCallback(async (q: string, nextCursor?: string) => {
     const isFirst = !nextCursor;
-    if (!q.trim()) {
-      setPeople([]);
-      setCursor(undefined);
-      return;
-    }
+    if (!q.trim()) { setPeople([]); setCursor(undefined); return; }
     const setBusy = isFirst ? setLoading : setLoadingMore;
     setBusy(true);
     const { data } = await api.GET('/v1/users', {
@@ -112,55 +100,40 @@ export default function ExploreScreen() {
     setBusy(false);
   }, []);
 
-  // Reload when category changes immediately.
   // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => { if (mode === 'challenges') load(query, category); }, [category]);
 
-  // Debounce search query; switching modes searches the other list for the same text.
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(
       () => (mode === 'people' ? loadPeople(query) : load(query, category)),
       300,
     );
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [query, mode]);
 
   function handleScroll({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) {
     const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-    if (
-      cursor &&
-      !loadingMore &&
-      layoutMeasurement.height + contentOffset.y >= contentSize.height - 300
-    ) {
+    if (cursor && !loadingMore && layoutMeasurement.height + contentOffset.y >= contentSize.height - 300) {
       if (mode === 'people') loadPeople(query, cursor);
       else load(query, category, cursor);
     }
   }
 
   return (
-    <ThemedView style={styles.root}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-          onScroll={handleScroll}
-          scrollEventThrottle={200}>
+    <View style={styles.root}>
+      {/* Decorative circles */}
+      <View style={[styles.dec, { width: 200, height: 200, top: -60, right: -50 }]} pointerEvents="none" />
 
-          <View style={styles.modes}>
-            <Segmented options={MODES} value={mode} onChange={setMode} />
-          </View>
-
-          {/* Search bar */}
-          <View style={[styles.searchWrap, { backgroundColor: colors.backgroundElement }]}>
-            <Ionicons name="search-outline" size={18} color={colors.textSecondary} />
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.headerArea}>
+        <View style={styles.header}>
+          <ThemedText style={styles.title}>Explore</ThemedText>
+          <View style={[styles.searchWrap, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
+            <Ionicons name="search-outline" size={16} color="rgba(255,255,255,0.6)" />
             <TextInput
-              style={[styles.searchInput, { color: colors.text }]}
+              style={styles.searchInput}
               placeholder={mode === 'people' ? 'Search by name or @username…' : 'Search challenges…'}
-              placeholderTextColor={colors.textSecondary}
+              placeholderTextColor="rgba(255,255,255,0.45)"
               value={query}
               onChangeText={setQuery}
               returnKeyType="search"
@@ -169,6 +142,45 @@ export default function ExploreScreen() {
               clearButtonMode="while-editing"
             />
           </View>
+        </View>
+      </SafeAreaView>
+
+      <View style={styles.sheet}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={200}>
+
+          <View style={styles.modesWrap}>
+            <Segmented options={MODES} value={mode} onChange={setMode} />
+          </View>
+
+          {mode === 'challenges' && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.pills}>
+              {CATEGORIES.map((cat) => {
+                const active = cat.key === category;
+                return (
+                  <Pressable
+                    key={cat.label}
+                    style={[
+                      styles.pill,
+                      active ? { backgroundColor: AccentColor } : { backgroundColor: colors.backgroundElement },
+                    ]}
+                    onPress={() => setCategory(cat.key)}>
+                    <Ionicons name={cat.icon} size={13} color={active ? '#fff' : colors.textSecondary} />
+                    <ThemedText type="small" style={{ color: active ? '#fff' : colors.text }}>
+                      {cat.label}
+                    </ThemedText>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          )}
 
           {mode === 'people' && (
             <>
@@ -183,57 +195,18 @@ export default function ExploreScreen() {
                   <UserRow key={person.id} user={person} />
                 ))}
               </View>
-              {loadingMore && (
-                <ActivityIndicator style={styles.spinner} color={colors.textSecondary} />
-              )}
+              {loadingMore && <ActivityIndicator style={styles.spinner} color={colors.textSecondary} />}
             </>
           )}
 
           {mode === 'challenges' && (
             <>
-              {/* Category pills */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.pills}>
-                {CATEGORIES.map((cat) => {
-                  const active = cat.key === category;
-                  return (
-                    <Pressable
-                      key={cat.label}
-                      style={[
-                        styles.pill,
-                        active
-                          ? { backgroundColor: AccentColor }
-                          : { backgroundColor: colors.backgroundElement },
-                      ]}
-                      onPress={() => setCategory(cat.key)}>
-                      <Ionicons
-                        name={cat.icon}
-                        size={13}
-                        color={active ? '#fff' : colors.textSecondary}
-                      />
-                      <ThemedText
-                        type="small"
-                        style={{ color: active ? '#fff' : colors.text }}>
-                        {cat.label}
-                      </ThemedText>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-
-              {loading && (
-                <ActivityIndicator style={styles.spinner} color={colors.textSecondary} />
-              )}
-
+              {loading && <ActivityIndicator style={styles.spinner} color={colors.textSecondary} />}
               {!loading && items.length === 0 && (
                 <ThemedText type="small" themeColor="textSecondary" style={styles.empty}>
                   No challenges found.
                 </ThemedText>
               )}
-
-              {/* Challenge list */}
               <View style={styles.cardList}>
                 {items.map((item, index) => (
                   <ChallengeCard
@@ -244,32 +217,27 @@ export default function ExploreScreen() {
                   />
                 ))}
               </View>
-
-              {loadingMore && (
-                <ActivityIndicator style={styles.spinner} color={colors.textSecondary} />
-              )}
+              {loadingMore && <ActivityIndicator style={styles.spinner} color={colors.textSecondary} />}
             </>
           )}
 
         </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  safeArea: { flex: 1, alignItems: 'center' },
-  scroll: { flex: 1, width: '100%' },
-  list: {
-    maxWidth: MaxContentWidth,
-    width: '100%',
-    alignSelf: 'center',
+  root: { flex: 1, backgroundColor: HEADER_GREEN },
+  dec: { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)' },
+  headerArea: { backgroundColor: HEADER_GREEN },
+  header: {
     paddingHorizontal: Spacing.four,
-    paddingTop: TabBarWebInset,
-    paddingBottom: BottomTabInset + Spacing.four,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.three,
+    gap: Spacing.two,
   },
-  modes: { marginTop: Spacing.six, marginBottom: Spacing.two },
+  title: { fontSize: 26, fontWeight: '800', color: '#fff', letterSpacing: -0.4 },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -277,19 +245,30 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two + 2,
-    marginBottom: Spacing.two,
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
+    color: '#fff',
     outlineStyle: 'none',
   } as object,
-  pills: {
-    flexDirection: 'row',
-    gap: Spacing.one,
-    paddingVertical: Spacing.two,
-    paddingBottom: Spacing.three,
+  sheet: {
+    flex: 1,
+    backgroundColor: '#F4F4F8',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
   },
+  scroll: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.three,
+    paddingBottom: BottomTabInset + Spacing.four,
+  },
+  modesWrap: { marginBottom: Spacing.two },
+  pills: { flexDirection: 'row', gap: Spacing.one, paddingVertical: Spacing.two, paddingBottom: Spacing.three },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',

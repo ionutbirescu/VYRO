@@ -6,10 +6,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '@/api/client';
 import type { Schemas } from '@/api/client';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { AccentColor, BottomTabInset, MaxContentWidth, Spacing, TabBarWebInset } from '@/constants/theme';
+import { AccentColor, BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
 import { useTheme } from '@/hooks/use-theme';
+
+const HEADER_GREEN = '#1a3d2b';
 
 const PLUS_FEATURES: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
   { icon: 'sparkles-outline', text: 'Unlimited AI challenge generation' },
@@ -61,14 +62,9 @@ export default function ShopScreen() {
               body: { product_code: product.code },
             });
             setPurchasing(null);
-            if (error || !data) {
-              Alert.alert('Purchase failed', 'Try again later.');
-              return;
-            }
+            if (error || !data) { Alert.alert('Purchase failed', 'Try again later.'); return; }
             setEntitlements(data.entitlements);
-            setProducts((prev) =>
-              prev.map((p) => (p.code === product.code ? { ...p, owned: true } : p)),
-            );
+            setProducts((prev) => prev.map((p) => (p.code === product.code ? { ...p, owned: true } : p)));
             await refreshProfile();
             Alert.alert('Purchased!', `${product.name} is now yours. (sandbox)`);
           },
@@ -86,198 +82,198 @@ export default function ShopScreen() {
     setEquipping(null);
   }
 
-  if (loading) {
-    return (
-      <ThemedView style={styles.centered}>
-        <ActivityIndicator />
-      </ThemedView>
-    );
-  }
-
   const subProducts = products.filter((p) => p.kind === 'subscription' || p.kind === 'one_time');
   const cosmeticProducts = products.filter((p) => p.kind === 'cosmetic');
   const isPlus = entitlements?.is_plus ?? false;
 
   return (
-    <ThemedView style={styles.root}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+    <View style={styles.root}>
+      {/* Decorative circles */}
+      <View style={[styles.dec, { width: 200, height: 200, top: -60, right: -50 }]} pointerEvents="none" />
 
-          {/* VYRO+ section */}
-          {subProducts.length > 0 && (
-            <View style={[styles.plusCard, { backgroundColor: isPlus ? '#1a1a2e' : '#0f172a' }]}>
-              <View style={styles.plusHeader}>
-                <Ionicons name="flash" size={22} color="#f59e0b" />
-                <ThemedText type="subtitle" style={styles.plusTitle}>VYRO+</ThemedText>
-              </View>
-              {isPlus && entitlements?.plus_until ? (
-                <ThemedText type="small" style={{ color: '#f59e0b' }}>
-                  Active until {new Date(entitlements.plus_until).toLocaleDateString()}
-                </ThemedText>
-              ) : (
-                <ThemedText type="small" style={{ color: '#94a3b8' }}>
-                  Unlock the full VYRO experience
-                </ThemedText>
-              )}
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.headerArea}>
+        <View style={styles.header}>
+          <ThemedText style={styles.title}>Shop</ThemedText>
+          <ThemedText style={styles.subtitle}>Upgrade your VYRO experience</ThemedText>
+        </View>
+      </SafeAreaView>
 
-              <View style={styles.featureList}>
-                {PLUS_FEATURES.map((f) => (
-                  <View key={f.text} style={styles.featureRow}>
-                    <Ionicons name={f.icon} size={15} color={AccentColor} />
-                    <ThemedText type="small" style={{ color: '#e2e8f0' }}>
-                      {f.text}
+      <View style={styles.sheet}>
+        {loading ? (
+          <View style={styles.centered}>
+            <ActivityIndicator color={colors.textSecondary} />
+          </View>
+        ) : (
+          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+
+            {subProducts.length > 0 && (
+              <View style={[styles.plusCard, { backgroundColor: isPlus ? '#1a2e1a' : '#0f172a' }]}>
+                <View style={styles.plusHeader}>
+                  <Ionicons name="flash" size={22} color="#f59e0b" />
+                  <ThemedText type="subtitle" style={styles.plusTitle}>VYRO+</ThemedText>
+                  {isPlus && (
+                    <View style={styles.activeBadge}>
+                      <ThemedText style={styles.activeBadgeText}>Active</ThemedText>
+                    </View>
+                  )}
+                </View>
+
+                {isPlus && entitlements?.plus_until ? (
+                  <ThemedText type="small" style={{ color: '#f59e0b' }}>
+                    Active until {new Date(entitlements.plus_until).toLocaleDateString()}
+                  </ThemedText>
+                ) : (
+                  <ThemedText type="small" style={{ color: '#94a3b8' }}>
+                    Unlock the full VYRO experience
+                  </ThemedText>
+                )}
+
+                <View style={styles.featureList}>
+                  {PLUS_FEATURES.map((f) => (
+                    <View key={f.text} style={styles.featureRow}>
+                      <Ionicons name={f.icon} size={15} color={AccentColor} />
+                      <ThemedText type="small" style={{ color: '#e2e8f0' }}>{f.text}</ThemedText>
+                    </View>
+                  ))}
+                </View>
+
+                {subProducts.map((p) => (
+                  <Pressable
+                    key={p.code}
+                    style={[styles.plusBtn, { opacity: p.owned || purchasing === p.code ? 0.6 : 1 }]}
+                    onPress={() => !p.owned && handlePurchase(p)}
+                    disabled={p.owned || purchasing === p.code}>
+                    <ThemedText style={{ color: '#000', fontWeight: '700', fontSize: 16 }}>
+                      {p.owned
+                        ? '✓ Subscribed'
+                        : purchasing === p.code
+                          ? 'Processing…'
+                          : `${formatPrice(p.price_cents, p.currency)} / month`}
                     </ThemedText>
-                  </View>
+                    {!p.owned && (
+                      <ThemedText type="small" style={{ color: '#00000080' }}>Sandbox — no real charge</ThemedText>
+                    )}
+                  </Pressable>
                 ))}
               </View>
+            )}
 
-              {subProducts.map((p) => (
-                <Pressable
-                  key={p.code}
-                  style={[
-                    styles.plusBtn,
-                    { opacity: p.owned || purchasing === p.code ? 0.6 : 1 },
-                  ]}
-                  onPress={() => !p.owned && handlePurchase(p)}
-                  disabled={p.owned || purchasing === p.code}>
-                  <ThemedText style={{ color: '#000', fontWeight: '700', fontSize: 16 }}>
-                    {p.owned
-                      ? '✓ Subscribed'
-                      : purchasing === p.code
-                        ? 'Processing…'
-                        : `${formatPrice(p.price_cents, p.currency)} / month`}
-                  </ThemedText>
-                  {!p.owned && (
-                    <ThemedText type="small" style={{ color: '#00000080' }}>
-                      Sandbox - no real charge
-                    </ThemedText>
-                  )}
-                </Pressable>
-              ))}
-            </View>
-          )}
+            {cosmeticProducts.length > 0 && (
+              <View style={styles.section}>
+                <ThemedText style={styles.sectionTitle}>COSMETICS</ThemedText>
+                <View style={styles.grid}>
+                  {cosmeticProducts.map((p) => {
+                    const owned = entitlements?.cosmetics.find((c) => c.code === p.code);
+                    const isEquipped = owned?.equipped ?? false;
+                    const isBusy = purchasing === p.code || equipping === p.code;
 
-          {/* Cosmetics */}
-          {cosmeticProducts.length > 0 && (
-            <View style={styles.section}>
-              <ThemedText type="smallBold" style={styles.sectionTitle}>
-                COSMETICS
-              </ThemedText>
-              <View style={styles.grid}>
-                {cosmeticProducts.map((p) => {
-                  const owned = entitlements?.cosmetics.find((c) => c.code === p.code);
-                  const isEquipped = owned?.equipped ?? false;
-                  const isBusy = purchasing === p.code || equipping === p.code;
+                    return (
+                      <View
+                        key={p.code}
+                        style={[
+                          styles.cosmeticCard,
+                          {
+                            backgroundColor: isEquipped ? colors.backgroundSelected : colors.backgroundElement,
+                            borderColor: isEquipped ? colors.text : 'transparent',
+                            borderWidth: isEquipped ? 1.5 : 0,
+                          },
+                        ]}>
+                        <View style={[styles.cosmeticIconWrap, { backgroundColor: isEquipped ? AccentColor + '22' : colors.backgroundSelected }]}>
+                          <Ionicons name="color-palette-outline" size={22} color={isEquipped ? AccentColor : colors.textSecondary} />
+                        </View>
+                        <ThemedText type="smallBold" style={styles.cosmeticName} numberOfLines={2}>{p.name}</ThemedText>
+                        <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{p.description}</ThemedText>
 
-                  return (
-                    <View
-                      key={p.code}
-                      style={[
-                        styles.cosmeticCard,
-                        {
-                          backgroundColor: isEquipped
-                            ? colors.backgroundSelected
-                            : colors.backgroundElement,
-                          borderColor: isEquipped ? colors.text : 'transparent',
-                          borderWidth: isEquipped ? 1.5 : 0,
-                        },
-                      ]}>
-                      <View style={[styles.cosmeticIconWrap, { backgroundColor: isEquipped ? AccentColor + '22' : colors.backgroundSelected }]}>
-                        <Ionicons name="color-palette-outline" size={22} color={isEquipped ? AccentColor : colors.textSecondary} />
+                        {owned ? (
+                          <Pressable
+                            style={[
+                              styles.cosmeticBtn,
+                              {
+                                backgroundColor: isEquipped ? 'transparent' : colors.text,
+                                borderColor: colors.text,
+                                borderWidth: isEquipped ? 1 : 0,
+                                opacity: isBusy ? 0.5 : 1,
+                              },
+                            ]}
+                            onPress={() => handleEquip(p.code)}
+                            disabled={isBusy}>
+                            <ThemedText
+                              type="small"
+                              style={{ color: isEquipped ? colors.text : colors.background, fontWeight: '600' }}>
+                              {isBusy ? '…' : isEquipped ? 'Equipped ✓' : 'Equip'}
+                            </ThemedText>
+                          </Pressable>
+                        ) : (
+                          <Pressable
+                            style={[styles.cosmeticBtn, { backgroundColor: colors.text, opacity: isBusy ? 0.5 : 1 }]}
+                            onPress={() => handlePurchase(p)}
+                            disabled={isBusy}>
+                            <ThemedText type="small" style={{ color: colors.background, fontWeight: '600' }}>
+                              {isBusy ? '…' : formatPrice(p.price_cents, p.currency)}
+                            </ThemedText>
+                          </Pressable>
+                        )}
                       </View>
-                      <ThemedText type="smallBold" style={styles.cosmeticName} numberOfLines={2}>
-                        {p.name}
-                      </ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
-                        {p.description}
-                      </ThemedText>
-
-                      {owned ? (
-                        <Pressable
-                          style={[
-                            styles.cosmeticBtn,
-                            {
-                              backgroundColor: isEquipped ? 'transparent' : colors.text,
-                              borderColor: colors.text,
-                              borderWidth: isEquipped ? 1 : 0,
-                              opacity: isBusy ? 0.5 : 1,
-                            },
-                          ]}
-                          onPress={() => handleEquip(p.code)}
-                          disabled={isBusy}>
-                          <ThemedText
-                            type="small"
-                            style={{
-                              color: isEquipped ? colors.text : colors.background,
-                              fontWeight: '600',
-                            }}>
-                            {isBusy ? '…' : isEquipped ? 'Equipped ✓' : 'Equip'}
-                          </ThemedText>
-                        </Pressable>
-                      ) : (
-                        <Pressable
-                          style={[
-                            styles.cosmeticBtn,
-                            { backgroundColor: colors.text, opacity: isBusy ? 0.5 : 1 },
-                          ]}
-                          onPress={() => handlePurchase(p)}
-                          disabled={isBusy}>
-                          <ThemedText
-                            type="small"
-                            style={{ color: colors.background, fontWeight: '600' }}>
-                            {isBusy ? '…' : formatPrice(p.price_cents, p.currency)}
-                          </ThemedText>
-                        </Pressable>
-                      )}
-                    </View>
-                  );
-                })}
+                    );
+                  })}
+                </View>
               </View>
-            </View>
-          )}
+            )}
 
-          {products.length === 0 && (
-            <ThemedText themeColor="textSecondary" style={styles.empty}>
-              No products available right now.
-            </ThemedText>
-          )}
+            {products.length === 0 && (
+              <ThemedText themeColor="textSecondary" style={styles.empty}>
+                No products available right now.
+              </ThemedText>
+            )}
 
-        </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+          </ScrollView>
+        )}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  safeArea: { flex: 1 },
+  root: { flex: 1, backgroundColor: HEADER_GREEN },
+  dec: { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)' },
+  headerArea: { backgroundColor: HEADER_GREEN },
+  header: {
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.four,
+    gap: Spacing.one,
+  },
+  title: { fontSize: 26, fontWeight: '800', color: '#fff', letterSpacing: -0.4 },
+  subtitle: { fontSize: 13, color: 'rgba(255,255,255,0.65)' },
+  sheet: {
+    flex: 1,
+    backgroundColor: '#F4F4F8',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
+  },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: {
     width: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     paddingHorizontal: Spacing.four,
-    paddingTop: TabBarWebInset + Spacing.four,
+    paddingTop: Spacing.four,
     paddingBottom: BottomTabInset + Spacing.four,
     gap: Spacing.four,
   },
-  plusCard: {
-    borderRadius: 20,
-    padding: Spacing.six,
-    gap: Spacing.three,
+  plusCard: { borderRadius: 20, padding: Spacing.four, gap: Spacing.three },
+  plusHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  plusTitle: { color: '#f8fafc', flex: 1 },
+  activeBadge: {
+    backgroundColor: '#22c55e22',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 99,
   },
-  plusHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  plusTitle: { color: '#f8fafc' },
+  activeBadgeText: { fontSize: 11, fontWeight: '700', color: '#22c55e' },
   featureList: { gap: Spacing.two },
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
+  featureRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   plusBtn: {
     backgroundColor: '#f8fafc',
     borderRadius: 14,
@@ -286,31 +282,17 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   section: { gap: Spacing.two },
-  sectionTitle: { letterSpacing: 0.8 },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    color: '#8E8E93',
+    textTransform: 'uppercase',
   },
-  cosmeticCard: {
-    width: '47%',
-    borderRadius: 16,
-    padding: Spacing.three,
-    gap: Spacing.two,
-  },
-  cosmeticIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  cosmeticCard: { width: '47%', borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
+  cosmeticIconWrap: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   cosmeticName: { lineHeight: 18 },
-  cosmeticBtn: {
-    borderRadius: 10,
-    paddingVertical: Spacing.two,
-    alignItems: 'center',
-    marginTop: Spacing.one,
-  },
+  cosmeticBtn: { borderRadius: 10, paddingVertical: Spacing.two, alignItems: 'center', marginTop: Spacing.one },
   empty: { textAlign: 'center', paddingVertical: Spacing.six },
 });

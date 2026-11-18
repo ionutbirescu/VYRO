@@ -84,7 +84,13 @@ function ThemedStack() {
             {/* iOS 26 makes headers transparent by default, which slides the screen's content
                 under them, and the back button would show the previous route's name, e.g.
                 "(tabs)". An opaque header and an arrow-only back button avoid both. */}
-            <Stack screenOptions={{ headerTransparent: false, headerBackButtonDisplayMode: 'minimal' }}>
+            <Stack screenOptions={{
+              headerTransparent: false,
+              headerBackButtonDisplayMode: 'minimal',
+              headerStyle: { backgroundColor: '#1a3d2b' },
+              headerTintColor: '#fff',
+              headerTitleStyle: { color: '#fff', fontWeight: '600' },
+            }}>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="auth" options={{ headerShown: false }} />
               <Stack.Screen name="challenge/[id]" options={{ title: 'Challenge' }} />

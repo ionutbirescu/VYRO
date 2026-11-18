@@ -9,9 +9,10 @@ import { logEvent } from '@/api/events';
 import type { Schemas } from '@/api/client';
 import { ChallengeCard } from '@/components/challenge-card';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing, StreakColor, TabBarWebInset } from '@/constants/theme';
+import { BottomTabInset, MaxContentWidth, Spacing, StreakColor } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
+
+const HEADER_GREEN = '#1a3d2b';
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -53,38 +54,48 @@ export default function HomeScreen() {
   }, []);
 
   return (
-    <ThemedView style={styles.root}>
-      <SafeAreaView style={styles.safeArea}>
+    <View style={styles.root}>
+      {/* Decorative circles */}
+      <View style={[styles.dec, { width: 240, height: 240, top: -80, right: -60 }]} pointerEvents="none" />
+      <View style={[styles.dec, { width: 120, height: 120, top: 20, right: 50 }]} pointerEvents="none" />
+
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.headerArea}>
+        <View style={styles.header}>
+          <ThemedText style={styles.greeting}>
+            {greeting()}{profile ? `, ${profile.display_name.split(' ')[0]}` : ''} 👋
+          </ThemedText>
+          {profile && (
+            <View style={styles.subRow}>
+              <ThemedText style={styles.subText}>
+                Level {profile.level} · {profile.xp.toLocaleString()} XP
+              </ThemedText>
+              {profile.current_streak > 0 && (
+                <View style={styles.streakPill}>
+                  <Ionicons name="flame" size={12} color={StreakColor} />
+                  <ThemedText style={styles.streakText}>{profile.current_streak}d</ThemedText>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+      </SafeAreaView>
+
+      <View style={styles.sheet}>
         <ScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}>
 
-          {/* Header */}
-          <View style={styles.header}>
-            <ThemedText style={styles.greetingName}>
-              {greeting()}{profile ? `, ${profile.display_name.split(' ')[0]}` : ''} 👋
-            </ThemedText>
-            {profile && (
-              <View style={styles.subRow}>
-                <ThemedText type="small" themeColor="textSecondary">
-                  Level {profile.level} · {profile.xp.toLocaleString()} XP
-                </ThemedText>
-                {profile.current_streak > 0 && (
-                  <ThemedText type="small" themeColor="textSecondary">
-                    · <Ionicons name="flame" size={12} color={StreakColor} /> {profile.current_streak}d streak
-                  </ThemedText>
-                )}
-              </View>
-            )}
-          </View>
-
-          {/* Active Challenges */}
-          <Section title="Active Challenges">
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <ThemedText style={styles.sectionTitle}>Active Challenges</ThemedText>
+            </View>
             {active.status === 'loading' && (
               <ThemedText type="small" themeColor="textSecondary">Loading…</ThemedText>
             )}
             {active.status === 'empty' && (
-              <EmptyState message="No active challenges yet. Explore some below." />
+              <ThemedText type="small" themeColor="textSecondary" style={styles.emptyState}>
+                No active challenges yet. Explore some below.
+              </ThemedText>
             )}
             {active.status === 'ok' && (
               <ScrollView
@@ -102,15 +113,20 @@ export default function HomeScreen() {
                 ))}
               </ScrollView>
             )}
-          </Section>
+          </View>
 
-          {/* Recommended */}
-          <Section title="Recommended for you">
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <ThemedText style={styles.sectionTitle}>Recommended for you</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">Based on your activity</ThemedText>
+            </View>
             {recs.status === 'loading' && (
               <ThemedText type="small" themeColor="textSecondary">Loading…</ThemedText>
             )}
             {recs.status === 'empty' && (
-              <EmptyState message="Recommendations coming soon." />
+              <ThemedText type="small" themeColor="textSecondary" style={styles.emptyState}>
+                Recommendations coming soon.
+              </ThemedText>
             )}
             {recs.status === 'ok' && (
               <View style={styles.verticalList}>
@@ -142,76 +158,85 @@ export default function HomeScreen() {
                 ))}
               </View>
             )}
-          </Section>
+          </View>
 
         </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.section}>
-      <ThemedText style={styles.sectionTitle}>{title}</ThemedText>
-      {children}
+      </View>
     </View>
   );
 }
 
-function EmptyState({ message }: { message: string }) {
-  return (
-    <ThemedText type="small" themeColor="textSecondary" style={styles.emptyState}>
-      {message}
-    </ThemedText>
-  );
-}
-
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  safeArea: { flex: 1 },
+  root: { flex: 1, backgroundColor: HEADER_GREEN },
+  dec: { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)' },
+  headerArea: { backgroundColor: HEADER_GREEN },
+  header: {
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.four,
+    gap: Spacing.one,
+  },
+  greeting: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: -0.4,
+  },
+  subRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  subText: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.65)',
+  },
+  streakPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 99,
+  },
+  streakText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  sheet: {
+    flex: 1,
+    backgroundColor: '#F4F4F8',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
+  },
   scroll: {
     width: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     paddingHorizontal: Spacing.four,
-    paddingTop: TabBarWebInset,
+    paddingTop: Spacing.four,
     paddingBottom: BottomTabInset + Spacing.four,
-  },
-  header: {
-    paddingTop: Spacing.five,
-    paddingBottom: Spacing.three,
     gap: Spacing.one,
   },
-  greetingName: {
-    fontSize: 26,
-    fontWeight: '700',
-  },
-  subRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  section: {
-    paddingTop: Spacing.four,
-    gap: Spacing.two,
-  },
+  section: { gap: Spacing.two, paddingTop: Spacing.two },
+  sectionHeader: { gap: 2 },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1C1C1E',
+    letterSpacing: -0.3,
   },
   horizontalList: {
     gap: Spacing.two,
     paddingVertical: Spacing.one,
   },
-  verticalList: {
-    gap: Spacing.two,
-  },
+  verticalList: { gap: Spacing.two },
   reason: {
     marginTop: -Spacing.one,
     paddingHorizontal: Spacing.two,
   },
-  emptyState: {
-    paddingVertical: Spacing.three,
-  },
+  emptyState: { paddingVertical: Spacing.three },
 });

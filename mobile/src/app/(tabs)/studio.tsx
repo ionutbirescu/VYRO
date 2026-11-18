@@ -16,10 +16,11 @@ import { api } from '@/api/client';
 import { logEvent } from '@/api/events';
 import type { Schemas } from '@/api/client';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { AccentColor, BottomTabInset, MaxContentWidth, Spacing, TabBarWebInset } from '@/constants/theme';
+import { AccentColor, BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
 import { useTheme } from '@/hooks/use-theme';
+
+const HEADER_GREEN = '#1a3d2b';
 
 type StudioCategoryKey = 'fitness' | 'nutrition' | 'mindfulness' | 'sleep' | 'learning' | 'reading' | 'creativity' | 'productivity' | 'social' | 'outdoors' | 'sustainability' | 'finance' | 'digital_detox' | undefined;
 
@@ -42,7 +43,6 @@ const CATEGORIES: { key: StudioCategoryKey; label: string; icon: keyof typeof Io
 
 const DURATIONS = [1, 7, 14, 30] as const;
 
-
 export default function StudioScreen() {
   const { state } = useAuth();
   const colors = useTheme();
@@ -63,7 +63,6 @@ export default function StudioScreen() {
 
   useEffect(loadQuota, []);
 
-  // Set only while a free user has no drafts left.
   const quotaExhausted = !!quota?.next_free_at;
 
   useEffect(() => {
@@ -74,20 +73,13 @@ export default function StudioScreen() {
     setGenerating(true);
     setResult(null);
     setRating(0);
-
     const { data, response } = await api.POST('/v1/ai/challenges/generate', {
-      body: {
-        goal: goal.trim() || undefined,
-        category: category ?? undefined,
-        duration_days: duration,
-      },
+      body: { goal: goal.trim() || undefined, category: category ?? undefined, duration_days: duration },
     });
-
     if (data) {
       setResult(data);
       setQuota(data.quota);
     } else if (response.status === 429) {
-      // Out of free drafts (e.g. used up on another device): the VYRO+ card explains.
       loadQuota();
     } else {
       Alert.alert('Generation failed', 'Try again later.');
@@ -122,36 +114,47 @@ export default function StudioScreen() {
     setPublishing(false);
   }
 
+  const quotaUsed = quota ? Math.min((quota.used / Math.max(quota.limit ?? 1, 1)) * 100, 100) : 0;
+
   return (
-    <ThemedView style={styles.root}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+    <View style={styles.root}>
+      {/* Decorative circles */}
+      <View style={[styles.dec, { width: 200, height: 200, top: -60, right: -50 }]} pointerEvents="none" />
+      <View style={[styles.dec, { width: 80, height: 80, top: 10, right: 60 }]} pointerEvents="none" />
 
-          <View style={styles.headingRow}>
-            <ThemedText style={styles.heading}>AI Studio</ThemedText>
-            <Ionicons name="sparkles" size={22} color={AccentColor} />
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.headerArea}>
+        <View style={styles.header}>
+          <View style={styles.titleRow}>
+            <ThemedText style={styles.title}>AI Studio</ThemedText>
+            <Ionicons name="sparkles" size={22} color="rgba(255,255,255,0.8)" />
           </View>
-          <ThemedText themeColor="textSecondary">
-            Describe your goal and let AI build a challenge for you.
+          <ThemedText style={styles.subtitle}>
+            Describe your goal and AI builds a challenge for you
           </ThemedText>
-
-          {/* Quota */}
-          {quota && (
-            <View style={[styles.quotaBar, { backgroundColor: colors.backgroundElement }]}>
-              {quota.limit === null ? (
-                <View style={styles.quotaRow}>
-                  <Ionicons name="flash" size={13} color="#f59e0b" />
-                  <ThemedText type="small" themeColor="textSecondary">Unlimited drafts (VYRO+)</ThemedText>
-                </View>
-              ) : (
-                <ThemedText type="small" themeColor="textSecondary">
-                  {`${Math.max(quota.limit - quota.used, 0)} of ${quota.limit} free drafts left · every ${quota.window_hours / 24} days`}
-                </ThemedText>
-              )}
+          {quota && quota.limit !== null && (
+            <View style={styles.quotaRow}>
+              <View style={styles.quotaTrack}>
+                <View style={[styles.quotaFill, { width: `${quotaUsed}%` as `${number}%` }]} />
+              </View>
+              <ThemedText style={styles.quotaLabel}>
+                {Math.max(quota.limit - quota.used, 0)}/{quota.limit} drafts left
+              </ThemedText>
             </View>
           )}
+          {quota?.limit === null && (
+            <View style={styles.unlimitedRow}>
+              <Ionicons name="flash" size={12} color="#f59e0b" />
+              <ThemedText style={styles.unlimitedLabel}>Unlimited drafts (VYRO+)</ThemedText>
+            </View>
+          )}
+        </View>
+      </SafeAreaView>
 
-          {/* Form */}
+      <View style={styles.sheet}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}>
+
           {!result && (
             <View style={styles.form}>
               <Label>{"What's your goal? (optional)"}</Label>
@@ -175,16 +178,10 @@ export default function StudioScreen() {
                       key={String(cat.key)}
                       style={[
                         styles.pill,
-                        active
-                          ? { backgroundColor: AccentColor }
-                          : { backgroundColor: colors.backgroundElement },
+                        active ? { backgroundColor: AccentColor } : { backgroundColor: colors.backgroundElement },
                       ]}
                       onPress={() => setCategory(cat.key)}>
-                      <Ionicons
-                        name={cat.icon}
-                        size={12}
-                        color={active ? '#fff' : colors.textSecondary}
-                      />
+                      <Ionicons name={cat.icon} size={12} color={active ? '#fff' : colors.textSecondary} />
                       <ThemedText type="small" style={{ color: active ? '#fff' : colors.text }}>
                         {cat.label}
                       </ThemedText>
@@ -200,9 +197,9 @@ export default function StudioScreen() {
                   return (
                     <Pressable
                       key={d}
-                      style={[styles.durationBtn, { backgroundColor: active ? colors.text : colors.backgroundElement }]}
+                      style={[styles.durationBtn, { backgroundColor: active ? HEADER_GREEN : colors.backgroundElement }]}
                       onPress={() => setDuration(d)}>
-                      <ThemedText type="smallBold" style={{ color: active ? colors.background : colors.text }}>
+                      <ThemedText type="smallBold" style={{ color: active ? '#fff' : colors.text }}>
                         {d === 1 ? '1 day' : `${d}d`}
                       </ThemedText>
                     </Pressable>
@@ -218,23 +215,18 @@ export default function StudioScreen() {
 
               {quota?.next_free_at ? (
                 <View style={[styles.plusCard, { backgroundColor: colors.backgroundElement }]}>
-                  <View style={styles.quotaRow}>
+                  <View style={styles.plusCardRow}>
                     <Ionicons name="flash" size={16} color="#f59e0b" />
                     <ThemedText type="smallBold">{`You've used your ${quota.limit} free drafts`}</ThemedText>
                   </View>
                   <ThemedText type="small" themeColor="textSecondary">
-                    {`Your next free draft unlocks ${fromNow(quota.next_free_at)}. VYRO+ gives you unlimited AI drafts, starting now.`}
+                    {`Your next free draft unlocks ${fromNow(quota.next_free_at)}. VYRO+ gives you unlimited AI drafts.`}
                   </ThemedText>
                   <Pressable
                     style={styles.generateBtn}
-                    onPress={() => {
-                      logEvent('vyro_plus_prompt_tapped', { source: 'ai_studio' });
-                      router.push('/shop');
-                    }}>
-                    <View style={styles.generateBtnContent}>
-                      <Ionicons name="flash" size={16} color="#fff" />
-                      <ThemedText style={{ color: '#fff', fontWeight: '600' }}>Get VYRO+</ThemedText>
-                    </View>
+                    onPress={() => { logEvent('vyro_plus_prompt_tapped', { source: 'ai_studio' }); router.push('/shop'); }}>
+                    <Ionicons name="flash" size={16} color="#fff" />
+                    <ThemedText style={{ color: '#fff', fontWeight: '600' }}>Get VYRO+</ThemedText>
                   </Pressable>
                 </View>
               ) : (
@@ -245,12 +237,10 @@ export default function StudioScreen() {
                   {generating
                     ? <ActivityIndicator color="#fff" />
                     : (
-                      <View style={styles.generateBtnContent}>
+                      <>
                         <Ionicons name="sparkles" size={16} color="#fff" />
-                        <ThemedText style={{ color: '#fff', fontWeight: '600' }}>
-                          Generate challenge
-                        </ThemedText>
-                      </View>
+                        <ThemedText style={{ color: '#fff', fontWeight: '600' }}>Generate challenge</ThemedText>
+                      </>
                     )
                   }
                 </Pressable>
@@ -258,24 +248,16 @@ export default function StudioScreen() {
             </View>
           )}
 
-          {/* Preview */}
           {result && (
             <View style={styles.preview}>
               <View style={[styles.draftCard, { backgroundColor: colors.backgroundElement }]}>
-                <ThemedText type="smallBold" themeColor="textSecondary">
-                  AI generated draft
-                </ThemedText>
+                <ThemedText type="smallBold" themeColor="textSecondary">AI generated draft</ThemedText>
                 <ThemedText type="subtitle">{result.draft.title}</ThemedText>
                 <ThemedText themeColor="textSecondary">{result.draft.description}</ThemedText>
-
                 <View style={styles.draftMeta}>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {result.draft.category.replace('_', ' ')}
-                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">{result.draft.category.replace('_', ' ')}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">·</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    Difficulty {result.draft.difficulty}/5
-                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">Difficulty {result.draft.difficulty}/5</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">·</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
                     {result.draft.duration_days} day{result.draft.duration_days !== 1 ? 's' : ''}
@@ -283,7 +265,6 @@ export default function StudioScreen() {
                 </View>
               </View>
 
-              {/* Tasks preview */}
               <ThemedText type="smallBold" themeColor="textSecondary">Daily tasks</ThemedText>
               {result.draft.tasks.map((task) => (
                 <View key={task.day_number} style={[styles.taskRow, { backgroundColor: colors.backgroundElement }]}>
@@ -299,35 +280,29 @@ export default function StudioScreen() {
                 </View>
               ))}
 
-              {/* Star rating */}
               <View style={styles.ratingRow}>
                 <ThemedText type="small" themeColor="textSecondary">Rate this draft:</ThemedText>
                 <View style={styles.stars}>
                   {[1, 2, 3, 4, 5].map((s) => (
                     <Pressable key={s} onPress={() => submitRating(s)}>
-                      <Ionicons
-                        name={s <= rating ? 'star' : 'star-outline'}
-                        size={22}
-                        color={s <= rating ? '#f59e0b' : '#94a3b8'}
-                      />
+                      <Ionicons name={s <= rating ? 'star' : 'star-outline'} size={22} color={s <= rating ? '#f59e0b' : '#94a3b8'} />
                     </Pressable>
                   ))}
                 </View>
               </View>
 
-              {/* Actions */}
               <Pressable
-                style={[styles.generateBtn, { backgroundColor: colors.text, opacity: publishing ? 0.5 : 1 }]}
+                style={[styles.generateBtn, { backgroundColor: HEADER_GREEN, opacity: publishing ? 0.5 : 1 }]}
                 onPress={handlePublish}
                 disabled={publishing}>
                 {publishing
-                  ? <ActivityIndicator color={colors.background} />
-                  : <ThemedText style={{ color: colors.background, fontWeight: '600' }}>Publish challenge</ThemedText>
+                  ? <ActivityIndicator color="#fff" />
+                  : <ThemedText style={{ color: '#fff', fontWeight: '600' }}>Publish challenge</ThemedText>
                 }
               </Pressable>
 
               <Pressable
-                style={[styles.retryBtn, { borderColor: colors.backgroundElement }]}
+                style={[styles.retryBtn, { borderColor: colors.backgroundSelected }]}
                 onPress={() => setResult(null)}>
                 <ThemedText type="small" themeColor="textSecondary">Try again</ThemedText>
               </Pressable>
@@ -335,12 +310,11 @@ export default function StudioScreen() {
           )}
 
         </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+      </View>
+    </View>
   );
 }
 
-/** "in 5 h", "in 1 day 3 h", "in under an hour". */
 function fromNow(iso: string): string {
   const hours = Math.ceil((new Date(iso).getTime() - Date.now()) / 3_600_000);
   if (hours <= 1) return 'in under an hour';
@@ -355,21 +329,46 @@ function Label({ children }: { children: string }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  safeArea: { flex: 1 },
+  root: { flex: 1, backgroundColor: HEADER_GREEN },
+  dec: { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)' },
+  headerArea: { backgroundColor: HEADER_GREEN },
+  header: {
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.four,
+    gap: Spacing.one,
+  },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  title: { fontSize: 26, fontWeight: '800', color: '#fff', letterSpacing: -0.4 },
+  subtitle: { fontSize: 13, color: 'rgba(255,255,255,0.65)' },
+  quotaRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginTop: Spacing.one },
+  quotaTrack: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    overflow: 'hidden',
+  },
+  quotaFill: { height: '100%', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 2 },
+  quotaLabel: { fontSize: 11, color: 'rgba(255,255,255,0.65)' },
+  unlimitedRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: Spacing.one },
+  unlimitedLabel: { fontSize: 12, color: 'rgba(255,255,255,0.65)' },
+  sheet: {
+    flex: 1,
+    backgroundColor: '#F4F4F8',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
+  },
   scroll: {
     width: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.four,
     paddingBottom: BottomTabInset + Spacing.four,
     gap: Spacing.three,
-    paddingTop: TabBarWebInset + Spacing.four,
   },
-  headingRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginBottom: -Spacing.two },
-  heading: { fontSize: 24, fontWeight: '700' },
-  quotaBar: { borderRadius: 12, padding: Spacing.two + 2, alignItems: 'center' },
-  quotaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   form: { gap: Spacing.three },
   label: { marginBottom: -Spacing.two },
   input: { borderRadius: 12, padding: Spacing.three, fontSize: 16, minHeight: 80, textAlignVertical: 'top' },
@@ -390,9 +389,12 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     alignItems: 'center',
     backgroundColor: AccentColor,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.two,
   },
-  generateBtnContent: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   plusCard: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
+  plusCardRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   preview: { gap: Spacing.three },
   draftCard: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
   draftMeta: { flexDirection: 'row', gap: Spacing.two, flexWrap: 'wrap' },
