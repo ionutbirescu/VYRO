@@ -10,7 +10,7 @@ import type { Schemas } from '@/api/client';
 import { ChallengeCard } from '@/components/challenge-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing, TabBarWebInset } from '@/constants/theme';
+import { BottomTabInset, MaxContentWidth, Spacing, StreakColor, TabBarWebInset } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
 
 function greeting(): string {
@@ -32,7 +32,6 @@ export default function HomeScreen() {
   const [active, setActive] = useState<AsyncData<Schemas['ParticipationWithChallenge'][]>>({
     status: 'loading',
   });
-  // Sent back when joining, so the study can tell which recommendations led to a join.
   const [recommendationId, setRecommendationId] = useState<string | null>(null);
   const [recs, setRecs] = useState<AsyncData<Schemas['Recommendation'][]>>({
     status: 'loading',
@@ -62,24 +61,18 @@ export default function HomeScreen() {
 
           {/* Header */}
           <View style={styles.header}>
-            <ThemedText style={styles.greeting}>
-              {greeting()}{profile ? `, ${profile.display_name.split(' ')[0]}` : ''}
+            <ThemedText style={styles.greetingName}>
+              {greeting()}{profile ? `, ${profile.display_name.split(' ')[0]}` : ''} 👋
             </ThemedText>
             {profile && (
-              <View style={styles.statsRow}>
+              <View style={styles.subRow}>
                 <ThemedText type="small" themeColor="textSecondary">
                   Level {profile.level} · {profile.xp.toLocaleString()} XP
                 </ThemedText>
                 {profile.current_streak > 0 && (
-                  <>
-                    <ThemedText type="small" themeColor="textSecondary">·</ThemedText>
-                    <View style={styles.streakRow}>
-                      <Ionicons name="flame" size={13} color="#f97316" />
-                      <ThemedText type="small" themeColor="textSecondary">
-                        {profile.current_streak}d streak
-                      </ThemedText>
-                    </View>
-                  </>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    · <Ionicons name="flame" size={12} color={StreakColor} /> {profile.current_streak}d streak
+                  </ThemedText>
                 )}
               </View>
             )}
@@ -160,9 +153,7 @@ export default function HomeScreen() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
-      <ThemedText type="smallBold" style={styles.sectionTitle}>
-        {title.toUpperCase()}
-      </ThemedText>
+      <ThemedText style={styles.sectionTitle}>{title}</ThemedText>
       {children}
     </View>
   );
@@ -192,27 +183,22 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.three,
     gap: Spacing.one,
   },
-  greeting: {
-    fontSize: 28,
+  greetingName: {
+    fontSize: 26,
     fontWeight: '700',
-    lineHeight: 34,
   },
-  statsRow: {
+  subRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
-  },
-  streakRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    flexWrap: 'wrap',
   },
   section: {
     paddingTop: Spacing.four,
     gap: Spacing.two,
   },
   sectionTitle: {
-    letterSpacing: 0.8,
+    fontSize: 15,
+    fontWeight: '600',
   },
   horizontalList: {
     gap: Spacing.two,

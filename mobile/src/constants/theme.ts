@@ -55,6 +55,16 @@ export const InterFonts = {
 } as const;
 
 export const AccentColor = '#3c87f7';
+export const StreakColor = '#f97316';
+export const SuccessColor = '#22c55e';
+
+export const DifficultyColors: Record<number, { label: string; color: string }> = {
+  1: { label: 'Easy',      color: '#22c55e' },
+  2: { label: 'Medium',    color: '#3b82f6' },
+  3: { label: 'Hard',      color: '#f59e0b' },
+  4: { label: 'Very Hard', color: '#ef4444' },
+  5: { label: 'Extreme',   color: '#a855f7' },
+};
 
 export const Spacing = {
   half: 2,

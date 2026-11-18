@@ -63,11 +63,14 @@ export default function SignupScreen() {
         showsVerticalScrollIndicator={false}>
 
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
-          <ThemedText type="title" style={styles.logo}>VYRO</ThemedText>
-          <ThemedText type="subtitle" style={styles.heading}>Create account</ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.sub}>
-            Start your first challenge today.
-          </ThemedText>
+          <ThemedText style={[styles.logo, { color: AccentColor }]}>VYRO</ThemedText>
+
+          <View style={styles.headingGroup}>
+            <ThemedText style={styles.heading}>Create account</ThemedText>
+            <ThemedText themeColor="textSecondary" style={styles.sub}>
+              Start your first challenge today.
+            </ThemedText>
+          </View>
 
           <View style={styles.fields}>
             <PaperInput
@@ -167,20 +170,35 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 440,
-    borderRadius: 24,
+    borderRadius: 20,
     padding: Spacing.four,
     gap: Spacing.three,
   },
-  logo: { textAlign: 'center', letterSpacing: 4 },
-  heading: { textAlign: 'center' },
-  sub: { textAlign: 'center', marginTop: -Spacing.two },
+  logo: {
+    textAlign: 'center',
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: 2,
+  },
+  headingGroup: {
+    gap: 4,
+  },
+  heading: {
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  sub: {
+    textAlign: 'center',
+    fontSize: 14,
+  },
   fields: { gap: Spacing.two },
   button: {
     borderRadius: 14,
     marginTop: Spacing.one,
   },
   buttonContent: { paddingVertical: 6 },
-  buttonLabel: { fontSize: 16, fontWeight: '600', letterSpacing: 0.3 },
+  buttonLabel: { fontSize: 16, fontWeight: '600' },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',

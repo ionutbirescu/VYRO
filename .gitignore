@@ -19,8 +19,11 @@ api/to-rate*/
 !.env.example
 *.pem
 service-account*.json
+.claude/settings.local.json
 
 # Editors and OS
 .idea/
 .DS_Store
 Thumbs.db
+.mcp.json source /c/SAPDevelop/VYRO/api/.venv/Scripts/activate
+.mcp.json

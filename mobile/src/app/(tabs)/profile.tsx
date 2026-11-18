@@ -2,16 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { ProgressBar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { AccentColor, BottomTabInset, MaxContentWidth, Spacing, TabBarWebInset } from '@/constants/theme';
+import { AccentColor, BottomTabInset, MaxContentWidth, Spacing, StreakColor, SuccessColor, TabBarWebInset } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
 import { type ThemePreference, useThemePreference } from '@/contexts/theme-preference';
 import { useTheme } from '@/hooks/use-theme';
-import type { Schemas } from '@/api/client';
 
 const THEME_OPTIONS: { value: ThemePreference; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { value: 'light', label: 'Light', icon: 'sunny-outline' },
@@ -27,7 +25,6 @@ export default function ProfileScreen() {
   if (state.status !== 'ready') return null;
 
   const p = state.profile;
-
   const xpPct = Math.min(p.xp / Math.max(p.next_level_xp, 1), 1);
 
   return (
@@ -52,14 +49,10 @@ export default function ProfileScreen() {
                 </View>
               </View>
             </LinearGradient>
-            <ThemedText type="subtitle" style={styles.displayName}>
-              {p.display_name}
-            </ThemedText>
+            <ThemedText style={styles.displayName}>{p.display_name}</ThemedText>
             <ThemedText themeColor="textSecondary">@{p.username}</ThemedText>
             {p.bio && (
-              <ThemedText
-                themeColor="textSecondary"
-                style={styles.bio}>
+              <ThemedText themeColor="textSecondary" style={styles.bio}>
                 {p.bio}
               </ThemedText>
             )}
@@ -68,22 +61,25 @@ export default function ProfileScreen() {
           {/* XP Progress */}
           <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
             <View style={styles.xpHeader}>
-              <ThemedText type="smallBold">Level {p.level}</ThemedText>
+              <View style={styles.levelRow}>
+                <ThemedText style={styles.levelText}>Level {p.level}</ThemedText>
+                {p.is_plus && (
+                  <View style={styles.plusBadge}>
+                    <Ionicons name="flash" size={11} color="#f59e0b" />
+                    <ThemedText style={styles.plusText}>VYRO+</ThemedText>
+                  </View>
+                )}
+              </View>
               <ThemedText type="small" themeColor="textSecondary">
                 {p.xp.toLocaleString()} / {p.next_level_xp.toLocaleString()} XP
               </ThemedText>
             </View>
-            <ProgressBar
-              progress={xpPct}
-              color={AccentColor}
-              style={styles.xpTrack}
-            />
-            {p.is_plus && (
-              <View style={styles.plusRow}>
-                <Ionicons name="flash" size={13} color="#f59e0b" />
-                <ThemedText type="small" style={styles.plusBadge}>VYRO+</ThemedText>
-              </View>
-            )}
+            <View style={[styles.xpTrack, { backgroundColor: colors.backgroundSelected }]}>
+              <View style={[styles.xpFill, { width: `${xpPct * 100}%` as `${number}%`, backgroundColor: AccentColor }]} />
+            </View>
+            <ThemedText type="small" themeColor="textSecondary">
+              {Math.round(xpPct * 100)}% to level {p.level + 1}
+            </ThemedText>
           </View>
 
           {/* Stats Grid */}
@@ -171,7 +167,7 @@ function StatCard({
       disabled={!onPress}>
       <View style={styles.statIconRow}>
         <Ionicons name={icon} size={18} color={iconColor} />
-        <ThemedText type="subtitle" style={styles.statValue}>{value}</ThemedText>
+        <ThemedText style={styles.statValue}>{value}</ThemedText>
         {onPress && (
           <Ionicons name="chevron-forward" size={14} color={colors.textSecondary} style={styles.statChevron} />
         )}
@@ -199,32 +195,34 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   avatarRing: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.two,
   },
   avatarInner: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    width: 92,
+    height: 92,
+    borderRadius: 46,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatar: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
+    width: 86,
+    height: 86,
+    borderRadius: 43,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarLetter: {
-    fontSize: 34,
+    fontSize: 36,
     fontWeight: '700',
   },
   displayName: {
+    fontSize: 22,
+    fontWeight: '700',
     textAlign: 'center',
   },
   bio: {
@@ -242,17 +240,37 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  levelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  levelText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  plusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#f59e0b18',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 99,
+  },
+  plusText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#f59e0b',
+  },
   xpTrack: {
     height: 8,
     borderRadius: 4,
+    overflow: 'hidden',
   },
-  plusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  plusBadge: {
-    color: '#f59e0b',
+  xpFill: {
+    height: '100%',
+    borderRadius: 4,
   },
   grid: {
     flexDirection: 'row',
@@ -273,7 +291,8 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 26,
+    fontWeight: '700',
   },
   themeRow: {
     flexDirection: 'row',

@@ -107,7 +107,7 @@ export default function StudioScreen() {
   async function handlePublish() {
     if (!result) return;
     setPublishing(true);
-    const { data, error } = await api.POST('/v1/challenges', {
+    const { data } = await api.POST('/v1/challenges', {
       body: { ...result.draft, generation_id: result.generation_id, visibility: 'public' },
     });
     if (data) {
@@ -127,7 +127,10 @@ export default function StudioScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-          <ThemedText type="subtitle" style={styles.heading}>AI Studio</ThemedText>
+          <View style={styles.headingRow}>
+            <ThemedText style={styles.heading}>AI Studio</ThemedText>
+            <Ionicons name="sparkles" size={22} color={AccentColor} />
+          </View>
           <ThemedText themeColor="textSecondary">
             Describe your goal and let AI build a challenge for you.
           </ThemedText>
@@ -259,8 +262,8 @@ export default function StudioScreen() {
           {result && (
             <View style={styles.preview}>
               <View style={[styles.draftCard, { backgroundColor: colors.backgroundElement }]}>
-                <ThemedText type="smallBold" themeColor="textSecondary" style={styles.draftLabel}>
-                  AI GENERATED DRAFT
+                <ThemedText type="smallBold" themeColor="textSecondary">
+                  AI generated draft
                 </ThemedText>
                 <ThemedText type="subtitle">{result.draft.title}</ThemedText>
                 <ThemedText themeColor="textSecondary">{result.draft.description}</ThemedText>
@@ -281,7 +284,7 @@ export default function StudioScreen() {
               </View>
 
               {/* Tasks preview */}
-              <ThemedText type="smallBold" style={styles.tasksLabel}>DAILY TASKS</ThemedText>
+              <ThemedText type="smallBold" themeColor="textSecondary">Daily tasks</ThemedText>
               {result.draft.tasks.map((task) => (
                 <View key={task.day_number} style={[styles.taskRow, { backgroundColor: colors.backgroundElement }]}>
                   <View style={[styles.dayDot, { backgroundColor: colors.backgroundSelected }]}>
@@ -363,7 +366,8 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     paddingTop: TabBarWebInset + Spacing.four,
   },
-  heading: { marginBottom: -Spacing.two },
+  headingRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginBottom: -Spacing.two },
+  heading: { fontSize: 24, fontWeight: '700' },
   quotaBar: { borderRadius: 12, padding: Spacing.two + 2, alignItems: 'center' },
   quotaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   form: { gap: Spacing.three },
@@ -391,9 +395,7 @@ const styles = StyleSheet.create({
   plusCard: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
   preview: { gap: Spacing.three },
   draftCard: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
-  draftLabel: { letterSpacing: 0.8 },
   draftMeta: { flexDirection: 'row', gap: Spacing.two, flexWrap: 'wrap' },
-  tasksLabel: { letterSpacing: 0.8 },
   taskRow: { borderRadius: 12, padding: Spacing.three, flexDirection: 'row', gap: Spacing.two, alignItems: 'flex-start' },
   dayDot: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   taskText: { flex: 1, gap: 2 },

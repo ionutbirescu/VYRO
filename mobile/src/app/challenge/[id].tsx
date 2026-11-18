@@ -127,28 +127,33 @@ export default function ChallengeScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.badgeRow}>
-              <View style={[styles.diffBadge, { backgroundColor: diff.color + '22' }]}>
-                <ThemedText type="small" style={{ color: diff.color }}>{diff.label}</ThemedText>
+              <View style={[styles.diffBadge, { backgroundColor: diff.color + '20' }]}>
+                <ThemedText style={[styles.diffBadgeText, { color: diff.color }]}>{diff.label}</ThemedText>
               </View>
-              <ThemedText type="small" themeColor="textSecondary">
-                {challenge.duration_days === 1 ? '1 day' : `${challenge.duration_days} days`}
+              <ThemedText type="small" themeColor="textSecondary" style={styles.categoryLabel}>
+                {challenge.category.replace(/_/g, ' ')}
               </ThemedText>
             </View>
 
-            <ThemedText type="subtitle">{challenge.title}</ThemedText>
+            <ThemedText style={styles.challengeTitle}>{challenge.title}</ThemedText>
             <ThemedText themeColor="textSecondary" style={styles.description}>
               {challenge.description}
             </ThemedText>
 
             <View style={styles.statsRow}>
-              <Ionicons name="star-outline" size={14} color="#f59e0b" />
+              <Ionicons name="star" size={13} color="#f59e0b" />
               <ThemedText type="small" themeColor="textSecondary">
                 {challenge.total_xp.toLocaleString()} XP
               </ThemedText>
               <ThemedText type="small" themeColor="textSecondary">·</ThemedText>
-              <Ionicons name="people-outline" size={14} color="#94a3b8" />
+              <Ionicons name="time-outline" size={13} color={colors.textSecondary} />
               <ThemedText type="small" themeColor="textSecondary">
-                {challenge.participant_count.toLocaleString()} joined
+                {challenge.duration_days === 1 ? '1 day' : `${challenge.duration_days} days`}
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">·</ThemedText>
+              <Ionicons name="people-outline" size={13} color={colors.textSecondary} />
+              <ThemedText type="small" themeColor="textSecondary">
+                {challenge.participant_count.toLocaleString()}
               </ThemedText>
             </View>
           </View>
@@ -223,8 +228,8 @@ export default function ChallengeScreen() {
 
           {/* What participants did */}
           <View style={styles.sectionHeader}>
-            <ThemedText type="smallBold" style={styles.sectionTitle}>
-              ACTIVITY
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
+              Activity
             </ThemedText>
             {activity && activity.items.length > 0 && (
               <Pressable
@@ -256,8 +261,8 @@ export default function ChallengeScreen() {
           ))}
 
           {/* Task list */}
-          <ThemedText type="smallBold" style={styles.sectionTitle}>
-            DAILY TASKS
+          <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
+            Daily tasks
           </ThemedText>
 
           {challenge.tasks
@@ -347,7 +352,10 @@ const styles = StyleSheet.create({
   },
   header: { paddingTop: Spacing.three, gap: Spacing.two },
   badgeRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  diffBadge: { paddingHorizontal: Spacing.two, paddingVertical: 2, borderRadius: 99 },
+  diffBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 },
+  diffBadgeText: { fontSize: 12, fontWeight: '700' },
+  categoryLabel: { textTransform: 'capitalize' },
+  challengeTitle: { fontSize: 24, fontWeight: '700', lineHeight: 30 },
   description: { lineHeight: 22 },
   statsRow: { flexDirection: 'row', gap: Spacing.two, alignItems: 'center' },
   progressCard: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
@@ -362,7 +370,7 @@ const styles = StyleSheet.create({
   secondaryActions: { flexDirection: 'row', gap: Spacing.two },
   secondaryBtn: { borderRadius: 12, padding: Spacing.three, alignItems: 'center' },
   secondaryBtnContent: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  sectionTitle: { letterSpacing: 0.8, marginTop: Spacing.two },
+  sectionTitle: { marginTop: Spacing.two },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
   sectionLink: { marginTop: Spacing.two },
   taskCard: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
