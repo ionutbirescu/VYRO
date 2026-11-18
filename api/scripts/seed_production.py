@@ -8,7 +8,6 @@ from seed_challenges.py to the production API. Skips challenges that already exi
 """
 
 import argparse
-import os
 import sys
 from pathlib import Path
 
@@ -34,7 +33,8 @@ def load_env(path: Path) -> dict[str, str]:
 def get_firebase_token(api_key: str, email: str, password: str) -> str:
     # Try sign-in first
     url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}"
-    resp = requests.post(url, json={"email": email, "password": password, "returnSecureToken": True})
+    payload = {"email": email, "password": password, "returnSecureToken": True}
+    resp = requests.post(url, json=payload)
     if resp.ok:
         return resp.json()["idToken"]
 
@@ -45,7 +45,7 @@ def get_firebase_token(api_key: str, email: str, password: str) -> str:
     # Account doesn't exist — sign up
     print("Account not found, creating Firebase account...")
     url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={api_key}"
-    resp = requests.post(url, json={"email": email, "password": password, "returnSecureToken": True})
+    resp = requests.post(url, json=payload)
     if not resp.ok:
         sys.exit(f"Firebase sign-up failed: {resp.json()}")
     print("Firebase account created.")
@@ -64,12 +64,13 @@ def ensure_vyro_profile(token: str) -> None:
     # Create profile
     print("Creating VYRO profile...")
     username = "seeduser"
-    r = requests.post(f"{API_URL}/v1/me", headers=headers, json={"username": username, "name": "Seed User"})
+    profile = {"username": username, "name": "Seed User"}
+    r = requests.post(f"{API_URL}/v1/me", headers=headers, json=profile)
     if r.status_code == 409:
         # Username taken, try a unique one
         import time as _time
-        username = f"seed{int(_time.time()) % 10000}"
-        r = requests.post(f"{API_URL}/v1/me", headers=headers, json={"username": username, "name": "Seed User"})
+        profile["username"] = f"seed{int(_time.time()) % 10000}"
+        r = requests.post(f"{API_URL}/v1/me", headers=headers, json=profile)
     if not r.ok:
         sys.exit(f"Failed to create VYRO profile: {r.status_code} {r.text}")
     print(f"VYRO profile created: @{r.json()['username']}")
