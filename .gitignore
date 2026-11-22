@@ -20,6 +20,8 @@ api/to-rate*/
 *.pem
 service-account*.json
 .claude/settings.local.json
+claude-personal.ps1
+claude-personal.ps1a
 
 # Editors and OS
 .idea/

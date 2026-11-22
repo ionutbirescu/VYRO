@@ -1,0 +1,135 @@
+<mxfile><diagram name="Scalability"><mxGraphModel adaptiveColors="auto">
+  <root>
+    <mxCell id="0"/>
+    <mxCell id="1" parent="0"/>
+    <mxCell id="title" value="VYRO — Scalability: 3 Architecture States" style="text;html=1;fontStyle=1;fontSize=20;align=center;" vertex="1" parent="1">
+      <mxGeometry x="0" y="5" width="1165" height="35" as="geometry"/>
+    </mxCell>
+    <mxCell id="legend" value="Color guide:  Gray = unchanged  ·  Yellow ⚠ = bottleneck  ·  Green ✓ = new or upgraded vs previous state" style="text;html=1;fontSize=12;align=center;" vertex="1" parent="1">
+      <mxGeometry x="5" y="745" width="1160" height="25" as="geometry"/>
+    </mxCell>
+    <mxCell id="s1" value="STATE 1 — Current (~100 users, prototype)" style="swimlane;startSize=40;fillColor=#FFF8F0;strokeColor=#FFA500;fontStyle=1;fontSize=13;html=1;" vertex="1" parent="1">
+      <mxGeometry x="5" y="50" width="350" height="680" as="geometry"/>
+    </mxCell>
+    <mxCell id="s1_mob" value="&lt;b&gt;Mobile App&lt;/b&gt;&lt;br&gt;&lt;small&gt;React Native · Expo&lt;/small&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F2F4F7;strokeColor=#B8C0CC;fontSize=13;" vertex="1" parent="s1">
+      <mxGeometry x="100" y="15" width="145" height="55" as="geometry"/>
+    </mxCell>
+    <mxCell id="s1_run" value="&lt;b&gt;Cloud Run&lt;/b&gt;&lt;br&gt;&lt;small&gt;⚠ 1 instance · cold starts&lt;/small&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3CD;strokeColor=#FFC107;fontSize=13;" vertex="1" parent="s1">
+      <mxGeometry x="100" y="110" width="145" height="55" as="geometry"/>
+    </mxCell>
+    <mxCell id="s1_sql" value="&lt;b&gt;Cloud SQL&lt;/b&gt;&lt;br&gt;&lt;small&gt;⚠ f1-micro&lt;br&gt;25 conns max&lt;/small&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#FFF3CD;strokeColor=#FFC107;fontSize=13;" vertex="1" parent="s1">
+      <mxGeometry x="10" y="225" width="130" height="85" as="geometry"/>
+    </mxCell>
+    <mxCell id="s1_gcs" value="&lt;b&gt;Cloud Storage&lt;/b&gt;&lt;br&gt;&lt;small&gt;Proof photos&lt;br&gt;⚠ no CDN&lt;/small&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#F3EEFF;strokeColor=#B9A6F0;fontSize=13;" vertex="1" parent="s1">
+      <mxGeometry x="165" y="225" width="175" height="85" as="geometry"/>
+    </mxCell>
+    <mxCell id="s1_vai" value="&lt;b&gt;Vertex AI&lt;/b&gt;&lt;br&gt;&lt;small&gt;⚠ sync · blocks response&lt;/small&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3CD;strokeColor=#FFC107;fontSize=13;" vertex="1" parent="s1">
+      <mxGeometry x="100" y="360" width="145" height="55" as="geometry"/>
+    </mxCell>
+    <mxCell id="s1_note" value="&lt;b&gt;⚠ Bottlenecks&lt;/b&gt;&lt;br&gt;• Cloud Run: 1 instance, cold starts&lt;br&gt;• Cloud SQL f1-micro: 25 connections max&lt;br&gt;• Vertex AI: synchronous, blocks API response&lt;br&gt;• No CDN — photos served from GCS directly&lt;br&gt;&lt;br&gt;&lt;b&gt;Est. cost: ~$10/month&lt;/b&gt;" style="text;html=1;align=left;fontSize=12;whiteSpace=wrap;fillColor=#FFF3CD;strokeColor=#FFC107;" vertex="1" parent="s1">
+      <mxGeometry x="10" y="440" width="325" height="210" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_s1_mr" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#8A94A6;" edge="1" source="s1_mob" target="s1_run" parent="s1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_s1_rs" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#8A94A6;" edge="1" source="s1_run" target="s1_sql" parent="s1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_s1_rg" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#8A94A6;" edge="1" source="s1_run" target="s1_gcs" parent="s1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_s1_rv" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#8A94A6;" edge="1" source="s1_run" target="s1_vai" parent="s1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="s2" value="STATE 2 — Intermediate (1K–10K users)" style="swimlane;startSize=40;fillColor=#F0F7FF;strokeColor=#4285F4;fontStyle=1;fontSize=13;html=1;" vertex="1" parent="1">
+      <mxGeometry x="375" y="50" width="390" height="680" as="geometry"/>
+    </mxCell>
+    <mxCell id="s2_mob" value="&lt;b&gt;Mobile App&lt;/b&gt;&lt;br&gt;&lt;small&gt;React Native · Expo&lt;/small&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F2F4F7;strokeColor=#B8C0CC;fontSize=13;" vertex="1" parent="s2">
+      <mxGeometry x="120" y="15" width="145" height="55" as="geometry"/>
+    </mxCell>
+    <mxCell id="s2_run" value="&lt;b&gt;Cloud Run&lt;/b&gt;&lt;br&gt;&lt;small&gt;✓ auto-scale 1–10 instances&lt;/small&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D4EDDA;strokeColor=#28A745;fontSize=13;" vertex="1" parent="s2">
+      <mxGeometry x="120" y="110" width="145" height="55" as="geometry"/>
+    </mxCell>
+    <mxCell id="s2_pool" value="&lt;b&gt;PgBouncer&lt;/b&gt;&lt;br&gt;&lt;small&gt;✓ NEW · conn pooling&lt;/small&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D4EDDA;strokeColor=#28A745;fontSize=12;" vertex="1" parent="s2">
+      <mxGeometry x="10" y="210" width="135" height="45" as="geometry"/>
+    </mxCell>
+    <mxCell id="s2_sql" value="&lt;b&gt;Cloud SQL&lt;/b&gt;&lt;br&gt;&lt;small&gt;✓ g1-small&lt;br&gt;+ read replica&lt;/small&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#D4EDDA;strokeColor=#28A745;fontSize=13;" vertex="1" parent="s2">
+      <mxGeometry x="10" y="270" width="135" height="80" as="geometry"/>
+    </mxCell>
+    <mxCell id="s2_gcs" value="&lt;b&gt;Cloud Storage&lt;/b&gt;&lt;br&gt;&lt;small&gt;✓ + Cloud CDN&lt;br&gt;10× faster photos&lt;/small&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#D4EDDA;strokeColor=#28A745;fontSize=13;" vertex="1" parent="s2">
+      <mxGeometry x="165" y="210" width="210" height="80" as="geometry"/>
+    </mxCell>
+    <mxCell id="s2_tasks" value="&lt;b&gt;Cloud Tasks&lt;/b&gt;&lt;br&gt;&lt;small&gt;✓ NEW · async AI queue&lt;/small&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D4EDDA;strokeColor=#28A745;fontSize=13;" vertex="1" parent="s2">
+      <mxGeometry x="10" y="385" width="155" height="55" as="geometry"/>
+    </mxCell>
+    <mxCell id="s2_vai" value="&lt;b&gt;Vertex AI&lt;/b&gt;&lt;br&gt;&lt;small&gt;✓ now async&lt;/small&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF4FF;strokeColor=#9DB8F2;fontSize=13;" vertex="1" parent="s2">
+      <mxGeometry x="185" y="385" width="190" height="55" as="geometry"/>
+    </mxCell>
+    <mxCell id="s2_note" value="&lt;b&gt;✓ Changes vs State 1&lt;/b&gt;&lt;br&gt;• Cloud Run: config only (set maxInstances)&lt;br&gt;• PgBouncer: prevents connection exhaustion&lt;br&gt;• Cloud SQL: bigger tier + read replica&lt;br&gt;• Cloud CDN: 10× faster photo delivery&lt;br&gt;• Cloud Tasks: AI no longer blocks requests&lt;br&gt;&lt;br&gt;&lt;b&gt;Est. cost: ~$50–150/month&lt;/b&gt;" style="text;html=1;align=left;fontSize=12;whiteSpace=wrap;fillColor=#D4EDDA;strokeColor=#28A745;" vertex="1" parent="s2">
+      <mxGeometry x="10" y="460" width="365" height="195" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_s2_mr" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#8A94A6;" edge="1" source="s2_mob" target="s2_run" parent="s2">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_s2_rp" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#8A94A6;" edge="1" source="s2_run" target="s2_pool" parent="s2">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_s2_ps" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#8A94A6;" edge="1" source="s2_pool" target="s2_sql" parent="s2">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_s2_rg" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#8A94A6;" edge="1" source="s2_run" target="s2_gcs" parent="s2">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_s2_rt" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#8A94A6;" edge="1" source="s2_run" target="s2_tasks" parent="s2">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_s2_tv" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#8A94A6;" edge="1" source="s2_tasks" target="s2_vai" parent="s2">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="s3" value="STATE 3 — 1 Million Users" style="swimlane;startSize=40;fillColor=#F0FFF4;strokeColor=#28A745;fontStyle=1;fontSize=13;html=1;" vertex="1" parent="1">
+      <mxGeometry x="785" y="50" width="380" height="680" as="geometry"/>
+    </mxCell>
+    <mxCell id="s3_mob" value="&lt;b&gt;Mobile App&lt;/b&gt;&lt;br&gt;&lt;small&gt;React Native · Expo&lt;/small&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F2F4F7;strokeColor=#B8C0CC;fontSize=13;" vertex="1" parent="s3">
+      <mxGeometry x="115" y="15" width="145" height="55" as="geometry"/>
+    </mxCell>
+    <mxCell id="s3_gw" value="&lt;b&gt;API Gateway&lt;/b&gt;&lt;br&gt;&lt;small&gt;✓✓ NEW · rate limiting&lt;br&gt;auth offload · routing&lt;/small&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D4EDDA;strokeColor=#28A745;fontSize=13;" vertex="1" parent="s3">
+      <mxGeometry x="115" y="105" width="145" height="65" as="geometry"/>
+    </mxCell>
+    <mxCell id="s3_run" value="&lt;b&gt;Cloud Run — microservices&lt;/b&gt;&lt;br&gt;&lt;small&gt;✓✓ split: challenges · social · AI — scale independently&lt;/small&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D4EDDA;strokeColor=#28A745;fontSize=13;" vertex="1" parent="s3">
+      <mxGeometry x="10" y="210" width="355" height="55" as="geometry"/>
+    </mxCell>
+    <mxCell id="s3_spanner" value="&lt;b&gt;Cloud Spanner&lt;/b&gt;&lt;br&gt;&lt;small&gt;✓✓ REPLACED Postgres&lt;br&gt;globally distributed&lt;/small&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#D4EDDA;strokeColor=#28A745;fontSize=13;" vertex="1" parent="s3">
+      <mxGeometry x="10" y="315" width="160" height="85" as="geometry"/>
+    </mxCell>
+    <mxCell id="s3_gcs" value="&lt;b&gt;Cloud Storage&lt;/b&gt;&lt;br&gt;&lt;small&gt;✓✓ multi-region&lt;br&gt;+ global CDN&lt;/small&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#D4EDDA;strokeColor=#28A745;fontSize=13;" vertex="1" parent="s3">
+      <mxGeometry x="195" y="315" width="170" height="85" as="geometry"/>
+    </mxCell>
+    <mxCell id="s3_pubsub" value="&lt;b&gt;Pub/Sub&lt;/b&gt;&lt;br&gt;&lt;small&gt;✓✓ NEW · async AI workers&lt;/small&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D4EDDA;strokeColor=#28A745;fontSize=13;" vertex="1" parent="s3">
+      <mxGeometry x="10" y="430" width="165" height="55" as="geometry"/>
+    </mxCell>
+    <mxCell id="s3_vai" value="&lt;b&gt;Vertex AI&lt;/b&gt;&lt;br&gt;&lt;small&gt;async worker pool&lt;/small&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF4FF;strokeColor=#9DB8F2;fontSize=13;" vertex="1" parent="s3">
+      <mxGeometry x="195" y="430" width="170" height="55" as="geometry"/>
+    </mxCell>
+    <mxCell id="s3_note" value="&lt;b&gt;✓✓ Changes vs State 2&lt;/b&gt;&lt;br&gt;• API Gateway: rate limiting, DDoS protection&lt;br&gt;• Cloud Run: split into domain microservices&lt;br&gt;• Cloud Spanner replaces PostgreSQL (unlimited)&lt;br&gt;• Cloud Storage: multi-region + global CDN&lt;br&gt;• Pub/Sub: decoupled async AI worker pool&lt;br&gt;• Firebase Auth &amp;amp; Firestore: unchanged (serverless)&lt;br&gt;&lt;br&gt;&lt;b&gt;Est. cost: ~$5K–15K/month&lt;/b&gt;" style="text;html=1;align=left;fontSize=12;whiteSpace=wrap;fillColor=#D4EDDA;strokeColor=#28A745;" vertex="1" parent="s3">
+      <mxGeometry x="10" y="505" width="355" height="150" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_s3_mg" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#8A94A6;" edge="1" source="s3_mob" target="s3_gw" parent="s3">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_s3_gr" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#8A94A6;" edge="1" source="s3_gw" target="s3_run" parent="s3">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_s3_rs" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#8A94A6;" edge="1" source="s3_run" target="s3_spanner" parent="s3">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_s3_rg" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#8A94A6;" edge="1" source="s3_run" target="s3_gcs" parent="s3">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_s3_rp" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#8A94A6;" edge="1" source="s3_run" target="s3_pubsub" parent="s3">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_s3_pv" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#8A94A6;" edge="1" source="s3_pubsub" target="s3_vai" parent="s3">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+  </root>
+</mxGraphModel></diagram></mxfile>
