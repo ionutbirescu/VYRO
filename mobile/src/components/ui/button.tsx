@@ -1,8 +1,9 @@
 'use no memo';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
-import { AccentColor, BrandColors, InterFonts, Spacing } from '@/constants/theme';
+import { AccentColor, BrandColors, GradientPrimary, InterFonts, Spacing } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -36,16 +37,16 @@ export function Button({
   }));
 
   const bg: Record<ButtonVariant, string> = {
-    primary:   AccentColor,
+    primary:   AccentColor,   // overridden by gradient below
     secondary: BrandColors.cyan,
     outline:   'transparent',
     ghost:     'transparent',
-    danger:    '#EF4444',
+    danger:    '#FF1864',
   };
 
   const textColor: Record<ButtonVariant, string> = {
     primary:   '#fff',
-    secondary: '#0D0A1E',
+    secondary: '#0D0B1A',
     outline:   AccentColor,
     ghost:     colors.textSecondary,
     danger:    '#fff',
@@ -56,42 +57,60 @@ export function Button({
 
   const isDisabled = disabled || loading;
 
+  const inner = (
+    <View style={styles.row}>
+      {loading && (
+        <ActivityIndicator
+          size="small"
+          color={textColor[variant]}
+          style={styles.spinner}
+        />
+      )}
+      <ThemedText
+        style={{
+          color: textColor[variant],
+          fontSize: fontSize[size],
+          fontFamily: InterFonts.bold,
+          letterSpacing: -0.2,
+        }}
+      >
+        {label}
+      </ThemedText>
+    </View>
+  );
+
   return (
     <Animated.View style={[animStyle, fullWidth && styles.fullWidth]}>
       <Pressable
         onPress={isDisabled ? undefined : onPress}
         onPressIn={() => { scale.value = withSpring(0.97, { mass: 0.3, damping: 12 }); }}
         onPressOut={() => { scale.value = withSpring(1, { mass: 0.3, damping: 12 }); }}
-        style={[
-          styles.base,
-          {
-            backgroundColor: bg[variant],
-            paddingVertical: paddingV[size],
-            opacity: isDisabled ? 0.55 : 1,
-            borderWidth: variant === 'outline' ? 1.5 : 0,
-            borderColor: variant === 'outline' ? AccentColor : 'transparent',
-          },
-        ]}
+        style={{ opacity: isDisabled ? 0.55 : 1 }}
       >
-        <View style={styles.row}>
-          {loading && (
-            <ActivityIndicator
-              size="small"
-              color={textColor[variant]}
-              style={styles.spinner}
-            />
-          )}
-          <ThemedText
-            style={{
-              color: textColor[variant],
-              fontSize: fontSize[size],
-              fontFamily: InterFonts.bold,
-              letterSpacing: -0.2,
-            }}
+        {variant === 'primary' ? (
+          <LinearGradient
+            colors={GradientPrimary}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.base, { paddingVertical: paddingV[size] }]}
           >
-            {label}
-          </ThemedText>
-        </View>
+            {inner}
+          </LinearGradient>
+        ) : (
+          <View
+            style={[
+              styles.base,
+              {
+                backgroundColor: bg[variant],
+                paddingVertical: paddingV[size],
+                borderWidth: variant === 'outline' ? 1.5 : 0,
+                borderColor: variant === 'outline' ? AccentColor : 'transparent',
+              },
+            ]}
+          >
+            {inner}
+          </View>
+        )}
       </Pressable>
     </Animated.View>
   );
@@ -100,7 +119,7 @@ export function Button({
 const styles = StyleSheet.create({
   fullWidth: { width: '100%' },
   base: {
-    borderRadius: 14,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },

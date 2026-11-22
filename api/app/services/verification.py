@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from app.config import get_settings
 from app.enums import AiVerdict
-from app.models import ChallengeTask
+from app.models import ChallengeTask, TaskSwap
 from app.services import vertex
 
 log = logging.getLogger(__name__)
@@ -68,7 +68,7 @@ class _Answer(BaseModel):
     reason: str = Field(min_length=1, max_length=280)
 
 
-def _prompt(task: ChallengeTask, caption: str | None) -> str:
+def _prompt(task: ChallengeTask | TaskSwap, caption: str | None) -> str:
     return "\n".join(
         [
             f"Task (day {task.day_number}): {task.title}",
@@ -79,7 +79,10 @@ def _prompt(task: ChallengeTask, caption: str | None) -> str:
     )
 
 
-def verify(task: ChallengeTask, image: bytes, mime_type: str, caption: str | None) -> Result:
+def verify(
+    task: ChallengeTask | TaskSwap, image: bytes, mime_type: str, caption: str | None
+) -> Result:
+    """Judge the photo against `task`, or against the lighter version the user swapped it for."""
     if not vertex.enabled():
         return Result(AiVerdict.PASS, None, None, NOT_CONFIGURED)
     try:

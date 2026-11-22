@@ -19,6 +19,7 @@ from scripts.seed_challenges import CHALLENGES
 
 API_URL = "https://vyro-api-2aczsavhwq-ew.a.run.app"
 
+
 # Read Firebase config from mobile/.env
 def load_env(path: Path) -> dict[str, str]:
     env: dict[str, str] = {}
@@ -69,6 +70,7 @@ def ensure_vyro_profile(token: str) -> None:
     if r.status_code == 409:
         # Username taken, try a unique one
         import time as _time
+
         profile["username"] = f"seed{int(_time.time()) % 10000}"
         r = requests.post(f"{API_URL}/v1/me", headers=headers, json=profile)
     if not r.ok:

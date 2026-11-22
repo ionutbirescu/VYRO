@@ -19,6 +19,8 @@ dependencies = [
     "google-cloud-storage>=2.18",
     # IANA time zone data for zoneinfo; Windows and slim images ship none.
     "tzdata>=2024.2",
+    # Serves the coach's tools to MCP clients at /v1/mcp.
+    "mcp>=2.3,<3",
 ]
 
 [project.optional-dependencies]

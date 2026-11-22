@@ -3,10 +3,11 @@
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.enums import ParticipationStatus, ProofStatus
-from app.models import ChallengeTask, Participation, Proof, User
+from app.enums import InterventionStatus, ParticipationStatus, ProofStatus
+from app.models import ChallengeTask, CoachIntervention, Participation, Proof, TaskSwap, User
 from app.schemas.gamification import Rewards
 from app.services import achievements, events
 
@@ -83,6 +84,37 @@ def completed_today(user: User, participation: Participation, now: datetime) -> 
     return last is not None and local_date(user, last) == local_date(user, now)
 
 
+def swap_xp(task_xp: int) -> int:
+    """XP for a lighter version of a task: half, so a swap keeps the streak but not the pace."""
+    return max(1, task_xp // 2)
+
+
+def _record_rescue(db: Session, user: User, participation: Participation, now: datetime) -> None:
+    """If the streak rescue coach stepped in about this challenge today, the user came through:
+    log streak_rescued once, whether or not they accepted the offer."""
+    intervention = db.scalar(
+        select(CoachIntervention).where(
+            CoachIntervention.user_id == user.id,
+            CoachIntervention.local_date == local_date(user, now),
+            CoachIntervention.participation_id == participation.id,
+            CoachIntervention.rescued_at.is_(None),
+        )
+    )
+    if intervention is None:
+        return
+    intervention.rescued_at = now
+    events.log(
+        db,
+        user,
+        "streak_rescued",
+        intervention_id=intervention.id,
+        kind=intervention.kind,
+        accepted=intervention.status is InterventionStatus.ACCEPTED,
+        participation_id=participation.id,
+        current_streak=user.current_streak,
+    )
+
+
 def approve_proof(
     db: Session,
     user: User,
@@ -96,7 +128,8 @@ def approve_proof(
     The caller holds a lock on the user's row, so progress updates never interleave.
     """
     challenge = participation.challenge
-    xp = task.xp
+    swap = db.get(TaskSwap, (participation.id, task.id))
+    xp = swap.xp if swap else task.xp
     participation.completed_tasks += 1
     participation.last_progress_at = now
     finished = participation.completed_tasks >= challenge.duration_days
@@ -136,6 +169,7 @@ def approve_proof(
         )
     if user.level > level_before:
         events.log(db, user, "level_up", level=user.level)
+    _record_rescue(db, user, participation, now)
 
     return Rewards(
         xp_awarded=xp,

@@ -1,244 +1,179 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
 import { logEvent } from '@/api/events';
 import type { Schemas } from '@/api/client';
 import { ChallengeCard } from '@/components/challenge-card';
-import { ThemedText } from '@/components/themed-text';
-import { BrandColors, BottomTabInset, MaxContentWidth, Spacing, StreakColor } from '@/constants/theme';
+import { RescueCard } from '@/components/rescue-card';
+import { Screen, ScreenHeader, SectionHeader } from '@/components/screen';
+import { InterFonts, UI } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
 
-const HEADER_BG = BrandColors.headerBg;
+type AsyncData<T> = { status: 'loading' } | { status: 'ok'; data: T } | { status: 'empty' };
 
-function greeting(): string {
+function greeting() {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
+  return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
 }
-
-type AsyncData<T> =
-  | { status: 'loading' }
-  | { status: 'ok'; data: T }
-  | { status: 'empty' };
 
 export default function HomeScreen() {
   const { state } = useAuth();
   const profile = state.status === 'ready' ? state.profile : null;
 
-  const [active, setActive] = useState<AsyncData<Schemas['ParticipationWithChallenge'][]>>({
-    status: 'loading',
-  });
-  const [recommendationId, setRecommendationId] = useState<string | null>(null);
-  const [recs, setRecs] = useState<AsyncData<Schemas['Recommendation'][]>>({
-    status: 'loading',
-  });
+  const [active, setActive] = useState<AsyncData<Schemas['ParticipationWithChallenge'][]>>({ status: 'loading' });
+  const [recs, setRecs] = useState<AsyncData<Schemas['Recommendation'][]>>({ status: 'loading' });
+  const [rescue, setRescue] = useState<Schemas['RescueOffer'] | null>(null);
 
-  useEffect(() => {
+  const loadActive = useCallback(() => {
     api.GET('/v1/me/participations', { params: { query: { status: 'active', limit: 10 } } }).then(
       ({ data }) => setActive(data?.items.length ? { status: 'ok', data: data.items } : { status: 'empty' }),
       () => setActive({ status: 'empty' }),
     );
-
-    api.GET('/v1/recommendations', { params: { query: { limit: 5 } } }).then(
-      ({ data }) => {
-        setRecommendationId(data?.recommendation_id ?? null);
-        setRecs(data?.items.length ? { status: 'ok', data: data.items } : { status: 'empty' });
-      },
-      () => setRecs({ status: 'empty' }),
-    );
   }, []);
 
+  useEffect(() => {
+    loadActive();
+    api.GET('/v1/recommendations', { params: { query: { limit: 5 } } }).then(
+      ({ data }) => setRecs(data?.items.length ? { status: 'ok', data: data.items } : { status: 'empty' }),
+      () => setRecs({ status: 'empty' }),
+    );
+  }, [loadActive]);
+
+  // The coach checks for a challenge at risk each time Home is shown; at most one offer a day.
+  useFocusEffect(
+    useCallback(() => {
+      api.GET('/v1/coach/rescue').then(
+        ({ data }) => setRescue(data?.status === 'open' ? data : null),
+        () => setRescue(null),
+      );
+    }, []),
+  );
+
+  const firstName = profile?.display_name.split(' ')[0];
+
   return (
-    <View style={styles.root}>
-      {/* Decorative glows */}
-      <View style={[styles.dec, styles.decPink, { width: 260, height: 260, top: -90, right: -70 }]} pointerEvents="none" />
-      <View style={[styles.dec, styles.decCyan, { width: 130, height: 130, top: 10, right: 40 }]} pointerEvents="none" />
+    <Screen>
+      <ScreenHeader title={firstName ? `${greeting()}, ${firstName}` : greeting()} />
 
-      <SafeAreaView edges={['top', 'left', 'right']} style={styles.headerArea}>
-        <View style={styles.header}>
-          <ThemedText style={styles.greeting}>
-            {greeting()}{profile ? `, ${profile.display_name.split(' ')[0]}` : ''} 👋
-          </ThemedText>
-          {profile && (
-            <View style={styles.subRow}>
-              <ThemedText style={styles.subText}>
-                Level {profile.level} · {profile.xp.toLocaleString()} XP
-              </ThemedText>
-              {profile.current_streak > 0 && (
-                <View style={styles.streakPill}>
-                  <Ionicons name="flame" size={12} color={StreakColor} />
-                  <ThemedText style={styles.streakText}>{profile.current_streak}d</ThemedText>
-                </View>
-              )}
-            </View>
-          )}
+      {profile && (
+        <View style={styles.stats}>
+          <Stat value={profile.level} label="Level" />
+          <View style={styles.statSep} />
+          <Stat value={profile.xp.toLocaleString()} label="XP" />
+          <View style={styles.statSep} />
+          <Stat value={profile.current_streak} label="day streak" />
         </View>
-      </SafeAreaView>
+      )}
 
-      <View style={styles.sheet}>
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}>
+      {rescue && (
+        <RescueCard
+          offer={rescue}
+          onAnswered={() => {
+            setRescue(null);
+            loadActive();
+          }}
+        />
+      )}
 
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <ThemedText style={styles.sectionTitle}>Active Challenges</ThemedText>
-            </View>
-            {active.status === 'loading' && (
-              <ThemedText type="small" themeColor="textSecondary">Loading…</ThemedText>
-            )}
-            {active.status === 'empty' && (
-              <ThemedText type="small" themeColor="textSecondary" style={styles.emptyState}>
-                No active challenges yet. Explore some below.
-              </ThemedText>
-            )}
-            {active.status === 'ok' && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalList}>
-                {active.data.map((p) => (
-                  <ChallengeCard
-                    key={p.id}
-                    variant="compact"
-                    challenge={p.challenge}
-                    progress={{ completed: p.completed_tasks, total: p.total_tasks }}
-                    onPress={() => router.push(`/challenge/${p.challenge_id}`)}
-                  />
-                ))}
-              </ScrollView>
-            )}
-          </View>
+      <Pressable
+        onPress={() => router.push('/coach')}
+        style={({ pressed }) => [styles.coach, pressed && { backgroundColor: UI.surfaceHi }]}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.coachTitle}>Ask your coach</Text>
+          <Text style={styles.coachSub}>Progress, what to do next, catching up</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={UI.faint} />
+      </Pressable>
 
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <ThemedText style={styles.sectionTitle}>Recommended for you</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">Based on your activity</ThemedText>
-            </View>
-            {recs.status === 'loading' && (
-              <ThemedText type="small" themeColor="textSecondary">Loading…</ThemedText>
-            )}
-            {recs.status === 'empty' && (
-              <ThemedText type="small" themeColor="textSecondary" style={styles.emptyState}>
-                Recommendations coming soon.
-              </ThemedText>
-            )}
-            {recs.status === 'ok' && (
-              <View style={styles.verticalList}>
-                {recs.data.map((r) => (
-                  <View key={r.challenge.id}>
-                    <ChallengeCard
-                      variant="full"
-                      challenge={r.challenge}
-                      onPress={() => {
-                        logEvent('recommendation_opened', {
-                          recommendation_id: recommendationId,
-                          challenge_id: r.challenge.id,
-                          rank: r.rank,
-                        });
-                        router.push({
-                          pathname: '/challenge/[id]',
-                          params: recommendationId
-                            ? { id: r.challenge.id, rec: recommendationId }
-                            : { id: r.challenge.id },
-                        });
-                      }}
-                    />
-                    {r.reason && (
-                      <ThemedText type="small" themeColor="textSecondary" style={styles.reason}>
-                        {r.reason}
-                      </ThemedText>
-                    )}
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-
+      <SectionHeader title="In progress" />
+      {active.status === 'loading' && <ActivityIndicator color={UI.muted} style={styles.loader} />}
+      {active.status === 'empty' && (
+        <View style={styles.empty}>
+          <Text style={styles.emptyText}>You haven&apos;t joined anything yet.</Text>
+          <Pressable onPress={() => router.push('/explore')} hitSlop={8}>
+            <Text style={styles.link}>Browse challenges</Text>
+          </Pressable>
+        </View>
+      )}
+      {active.status === 'ok' && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hList}>
+          {active.data.map((p) => (
+            <ChallengeCard
+              key={p.id}
+              variant="compact"
+              challenge={p.challenge}
+              progress={{ completed: p.completed_tasks, total: p.total_tasks }}
+              onPress={() => router.push(`/challenge/${p.challenge.id}`)}
+            />
+          ))}
         </ScrollView>
-      </View>
+      )}
+
+      <SectionHeader title="Recommended for you" />
+      {recs.status === 'loading' && <ActivityIndicator color={UI.muted} style={styles.loader} />}
+      {recs.status === 'empty' && (
+        <Text style={[styles.emptyText, styles.padded]}>Nothing to suggest yet. Finish a challenge and check back.</Text>
+      )}
+      {recs.status === 'ok' && (
+        <View style={styles.list}>
+          {recs.data.map((r) => (
+            <ChallengeCard
+              key={r.challenge.id}
+              variant="full"
+              challenge={r.challenge}
+              onPress={() => {
+                logEvent('recommendation_tapped', { challenge_id: r.challenge.id });
+                router.push(`/challenge/${r.challenge.id}`);
+              }}
+            />
+          ))}
+        </View>
+      )}
+    </Screen>
+  );
+}
+
+function Stat({ value, label }: { value: string | number; label: string }) {
+  return (
+    <View style={styles.stat}>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: HEADER_BG },
-  dec: { position: 'absolute', borderRadius: 999 },
-  decPink: { backgroundColor: 'rgba(255,45,120,0.14)' },
-  decCyan: { backgroundColor: 'rgba(0,217,200,0.10)' },
-  headerArea: { backgroundColor: HEADER_BG },
-  header: {
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.four,
-    gap: Spacing.one,
+  stats: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: UI.surface,
   },
-  greeting: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#fff',
-    letterSpacing: -0.4,
-  },
-  subRow: {
+  stat: { flex: 1, paddingHorizontal: 16 },
+  statSep: { width: StyleSheet.hairlineWidth, backgroundColor: UI.line },
+  statValue: { fontFamily: InterFonts.bold, fontSize: 22, color: UI.text },
+  statLabel: { fontFamily: InterFonts.regular, fontSize: 13, color: UI.muted, marginTop: 2 },
+  coach: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    marginHorizontal: 20,
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: UI.surface,
   },
-  subText: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.65)',
-  },
-  streakPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 99,
-  },
-  streakText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  sheet: {
-    flex: 1,
-    backgroundColor: '#F7F0FF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    overflow: 'hidden',
-  },
-  scroll: {
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
-    paddingBottom: BottomTabInset + Spacing.four,
-    gap: Spacing.one,
-  },
-  section: { gap: Spacing.two, paddingTop: Spacing.two },
-  sectionHeader: { gap: 2 },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1A0A2E',
-    letterSpacing: -0.3,
-  },
-  horizontalList: {
-    gap: Spacing.two,
-    paddingVertical: Spacing.one,
-  },
-  verticalList: { gap: Spacing.two },
-  reason: {
-    marginTop: -Spacing.one,
-    paddingHorizontal: Spacing.two,
-  },
-  emptyState: { paddingVertical: Spacing.three },
+  coachTitle: { fontFamily: InterFonts.semiBold, fontSize: 16, color: UI.text },
+  coachSub: { fontFamily: InterFonts.regular, fontSize: 13, color: UI.muted, marginTop: 2 },
+  hList: { paddingHorizontal: 20 },
+  list: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: UI.line },
+  loader: { alignSelf: 'flex-start', marginLeft: 20 },
+  empty: { paddingHorizontal: 20, gap: 8 },
+  emptyText: { fontFamily: InterFonts.regular, fontSize: 15, color: UI.muted, lineHeight: 21 },
+  padded: { paddingHorizontal: 20 },
+  link: { fontFamily: InterFonts.semiBold, fontSize: 15, color: UI.accent },
 });

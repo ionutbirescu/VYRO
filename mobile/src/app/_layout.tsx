@@ -1,10 +1,10 @@
 import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
+  SpaceGrotesk_400Regular,
+  SpaceGrotesk_500Medium,
+  SpaceGrotesk_600SemiBold,
+  SpaceGrotesk_700Bold,
   useFonts,
-} from '@expo-google-fonts/inter';
+} from '@expo-google-fonts/space-grotesk';
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
@@ -66,6 +66,7 @@ function ThemedStack() {
             <Stack.Screen name="proof/comments"    options={{ title: 'Comments' }} />
             <Stack.Screen name="user/[id]"         options={{ title: 'Profile' }} />
             <Stack.Screen name="user/connections"  options={{ title: 'Connections' }} />
+            <Stack.Screen name="coach"             options={{ title: 'Coach' }} />
           </Stack>
         </AuthGuard>
       </AuthProvider>
@@ -75,10 +76,10 @@ function ThemedStack() {
 
 export default function RootLayout() {
   useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
+    SpaceGrotesk_400Regular,
+    SpaceGrotesk_500Medium,
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
   });
 
   return (

@@ -74,6 +74,17 @@ class ChallengeSummary(ApiModel):
     created_at: datetime
 
 
+class SwappedTask(ApiModel):
+    """A lighter version of the next task, accepted from the coach. Show it instead of that
+    day's task; proofs are checked against it and earn its (lower) XP."""
+
+    day_number: int = Field(ge=1)
+    title: str
+    instructions: str
+    proof_hint: str
+    xp: Count
+
+
 class Participation(ApiModel):
     id: UUID
     challenge_id: UUID
@@ -87,6 +98,9 @@ class Participation(ApiModel):
     joined_at: datetime
     last_progress_at: datetime | None
     ended_at: datetime | None
+    swapped_task: SwappedTask | None = Field(
+        default=None, description="The lighter version of the next task, if the user took one"
+    )
 
 
 class ChallengeDetail(ChallengeSummary):

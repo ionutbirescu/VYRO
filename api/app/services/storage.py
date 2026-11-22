@@ -40,6 +40,10 @@ class ProofStorage(Protocol):
 
     def read(self, object_path: str) -> bytes: ...
 
+    def save(self, object_path: str, data: bytes, content_type: str) -> None:
+        """Store a photo directly, for clients that can't PUT to an upload URL (MCP)."""
+        ...
+
 
 class CloudStorage:
     def __init__(self, bucket: str) -> None:
@@ -82,6 +86,9 @@ class CloudStorage:
     def read(self, object_path: str) -> bytes:
         return self._bucket.blob(object_path).download_as_bytes()
 
+    def save(self, object_path: str, data: bytes, content_type: str) -> None:
+        self._bucket.blob(object_path).upload_from_string(data, content_type=content_type)
+
 
 class LocalStorage:
     def __init__(self, root: Path, base_url: str) -> None:
@@ -94,7 +101,7 @@ class LocalStorage:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
         return path
 
-    def save(self, object_path: str, data: bytes) -> None:
+    def save(self, object_path: str, data: bytes, content_type: str = "") -> None:
         path = self.path(object_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)

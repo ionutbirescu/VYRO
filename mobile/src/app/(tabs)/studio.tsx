@@ -1,409 +1,250 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { api } from '@/api/client';
 import { logEvent } from '@/api/events';
 import type { Schemas } from '@/api/client';
-import { ThemedText } from '@/components/themed-text';
-import { AccentColor, BrandColors, BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useAuth } from '@/contexts/auth';
-import { useTheme } from '@/hooks/use-theme';
+import { FilterChip } from '@/components/filter-chip';
+import { Screen, ScreenHeader } from '@/components/screen';
+import { DifficultyColors, InterFonts, UI } from '@/constants/theme';
 
-const HEADER_BG = BrandColors.headerBg;
+type Category = Schemas['ChallengeDraft']['category'];
 
-type StudioCategoryKey = 'fitness' | 'nutrition' | 'mindfulness' | 'sleep' | 'learning' | 'reading' | 'creativity' | 'productivity' | 'social' | 'outdoors' | 'sustainability' | 'finance' | 'digital_detox' | undefined;
-
-const CATEGORIES: { key: StudioCategoryKey; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: undefined, label: 'Any', icon: 'grid-outline' },
-  { key: 'fitness', label: 'Fitness', icon: 'barbell-outline' },
-  { key: 'nutrition', label: 'Nutrition', icon: 'nutrition-outline' },
-  { key: 'mindfulness', label: 'Mindfulness', icon: 'body-outline' },
-  { key: 'sleep', label: 'Sleep', icon: 'bed-outline' },
-  { key: 'learning', label: 'Learning', icon: 'school-outline' },
-  { key: 'reading', label: 'Reading', icon: 'book-outline' },
-  { key: 'creativity', label: 'Creativity', icon: 'color-palette-outline' },
-  { key: 'productivity', label: 'Productivity', icon: 'checkmark-circle-outline' },
-  { key: 'social', label: 'Social', icon: 'people-outline' },
-  { key: 'outdoors', label: 'Outdoors', icon: 'leaf-outline' },
-  { key: 'sustainability', label: 'Sustainability', icon: 'refresh-circle-outline' },
-  { key: 'finance', label: 'Finance', icon: 'wallet-outline' },
-  { key: 'digital_detox', label: 'Detox', icon: 'eye-off-outline' },
+const CATEGORIES: { key: Category | undefined; label: string }[] = [
+  { key: undefined, label: 'Any' },
+  { key: 'fitness', label: 'Fitness' },
+  { key: 'nutrition', label: 'Nutrition' },
+  { key: 'mindfulness', label: 'Mindfulness' },
+  { key: 'sleep', label: 'Sleep' },
+  { key: 'learning', label: 'Learning' },
+  { key: 'reading', label: 'Reading' },
+  { key: 'productivity', label: 'Productivity' },
+  { key: 'outdoors', label: 'Outdoors' },
+  { key: 'digital_detox', label: 'Digital detox' },
 ];
 
 const DURATIONS = [1, 7, 14, 30] as const;
 
-export default function StudioScreen() {
-  const { state } = useAuth();
-  const colors = useTheme();
-  const profile = state.status === 'ready' ? state.profile : null;
+const EXAMPLES = ['Run every morning', 'Read before bed instead of scrolling', 'Drink more water'];
 
+function notify(title: string, message?: string) {
+  if (Platform.OS === 'web') window.alert(message ? `${title}\n\n${message}` : title);
+  else Alert.alert(title, message);
+}
+
+export default function StudioScreen() {
   const [quota, setQuota] = useState<Schemas['AiQuota'] | null>(null);
   const [goal, setGoal] = useState('');
-  const [category, setCategory] = useState<StudioCategoryKey>(undefined);
-  const [duration, setDuration] = useState<1 | 7 | 14 | 30>(7);
-  const [generating, setGenerating] = useState(false);
+  const [category, setCategory] = useState<Category | undefined>(undefined);
+  const [duration, setDuration] = useState<(typeof DURATIONS)[number]>(7);
+  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Schemas['GeneratedChallenge'] | null>(null);
-  const [rating, setRating] = useState(0);
   const [publishing, setPublishing] = useState(false);
 
   function loadQuota() {
-    api.GET('/v1/ai/quota').then(({ data }) => { if (data) setQuota(data); });
+    api.GET('/v1/ai/quota').then(({ data }) => data && setQuota(data));
   }
-
   useEffect(loadQuota, []);
 
-  const quotaExhausted = !!quota?.next_free_at;
-
+  const outOfQuota = !!quota?.next_free_at;
   useEffect(() => {
-    if (quotaExhausted) logEvent('vyro_plus_prompt_viewed', { source: 'ai_studio' });
-  }, [quotaExhausted]);
+    if (outOfQuota) logEvent('vyro_plus_prompt_viewed', { source: 'ai_studio' });
+  }, [outOfQuota]);
 
-  async function handleGenerate() {
-    setGenerating(true);
+  async function generate() {
+    setLoading(true);
     setResult(null);
-    setRating(0);
     const { data, response } = await api.POST('/v1/ai/challenges/generate', {
-      body: { goal: goal.trim() || undefined, category: category ?? undefined, duration_days: duration },
+      body: { goal: goal.trim() || undefined, category, duration_days: duration },
     });
+    setLoading(false);
     if (data) {
       setResult(data);
       setQuota(data.quota);
     } else if (response.status === 429) {
       loadQuota();
     } else {
-      Alert.alert('Generation failed', 'Try again later.');
+      notify("Couldn't generate that", 'Try again in a moment.');
     }
-    setGenerating(false);
   }
 
-  async function submitRating(stars: number) {
-    if (!result) return;
-    setRating(stars);
-    await api.PUT('/v1/ai/generations/{generation_id}/rating', {
-      params: { path: { generation_id: result.generation_id } },
-      body: { rating: stars },
-    });
-  }
-
-  async function handlePublish() {
+  async function publish() {
     if (!result) return;
     setPublishing(true);
     const { data } = await api.POST('/v1/challenges', {
       body: { ...result.draft, generation_id: result.generation_id, visibility: 'public' },
     });
-    if (data) {
-      setResult(null);
-      Alert.alert('Published!', 'Your challenge is live.', [
-        { text: 'View it', onPress: () => router.push(`/challenge/${data.id}`) },
-        { text: 'OK' },
-      ]);
-    } else {
-      Alert.alert('Could not publish', 'Try again.');
-    }
     setPublishing(false);
+    if (!data) return notify("Couldn't publish", 'Try again.');
+    setResult(null);
+    setGoal('');
+    router.push(`/challenge/${data.id}`);
   }
 
-  const quotaUsed = quota ? Math.min((quota.used / Math.max(quota.limit ?? 1, 1)) * 100, 100) : 0;
+  const quotaLine = !quota
+    ? null
+    : quota.limit === null
+      ? 'Unlimited with VYRO+'
+      : outOfQuota
+        ? `You've used all ${quota.limit} drafts. More at ${new Date(quota.next_free_at!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`
+        : `${quota.limit - quota.used} of ${quota.limit} drafts left today`;
 
   return (
-    <View style={styles.root}>
-      {/* Decorative glows */}
-      <View style={[styles.dec, styles.decPurple, { width: 220, height: 220, top: -70, right: -55 }]} pointerEvents="none" />
-      <View style={[styles.dec, styles.decPink, { width: 90, height: 90, top: 10, right: 55 }]} pointerEvents="none" />
+    <Screen>
+      <ScreenHeader title="AI Studio"subtitle="Describe a habit and get a day-by-day challenge for it." />
 
-      <SafeAreaView edges={['top', 'left', 'right']} style={styles.headerArea}>
-        <View style={styles.header}>
-          <View style={styles.titleRow}>
-            <ThemedText style={styles.title}>AI Studio</ThemedText>
-            <Ionicons name="sparkles" size={22} color="rgba(255,255,255,0.8)" />
-          </View>
-          <ThemedText style={styles.subtitle}>
-            Describe your goal and AI builds a challenge for you
-          </ThemedText>
-          {quota && quota.limit !== null && (
-            <View style={styles.quotaRow}>
-              <View style={styles.quotaTrack}>
-                <View style={[styles.quotaFill, { width: `${quotaUsed}%` as `${number}%` }]} />
-              </View>
-              <ThemedText style={styles.quotaLabel}>
-                {Math.max(quota.limit - quota.used, 0)}/{quota.limit} drafts left
-              </ThemedText>
-            </View>
-          )}
-          {quota?.limit === null && (
-            <View style={styles.unlimitedRow}>
-              <Ionicons name="flash" size={12} color="#f59e0b" />
-              <ThemedText style={styles.unlimitedLabel}>Unlimited drafts (VYRO+)</ThemedText>
-            </View>
-          )}
-        </View>
-      </SafeAreaView>
-
-      <View style={styles.sheet}>
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}>
-
-          {!result && (
-            <View style={styles.form}>
-              <Label>{"What's your goal? (optional)"}</Label>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.backgroundElement, color: colors.text }]}
-                placeholder="e.g. Run my first 5k, learn to meditate…"
-                placeholderTextColor={colors.textSecondary}
-                value={goal}
-                onChangeText={setGoal}
-                maxLength={500}
-                multiline
-                numberOfLines={3}
-              />
-
-              <Label>Category</Label>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pills}>
-                {CATEGORIES.map((cat) => {
-                  const active = cat.key === category;
-                  return (
-                    <Pressable
-                      key={String(cat.key)}
-                      style={[
-                        styles.pill,
-                        active ? { backgroundColor: AccentColor } : { backgroundColor: colors.backgroundElement },
-                      ]}
-                      onPress={() => setCategory(cat.key)}>
-                      <Ionicons name={cat.icon} size={12} color={active ? '#fff' : colors.textSecondary} />
-                      <ThemedText type="small" style={{ color: active ? '#fff' : colors.text }}>
-                        {cat.label}
-                      </ThemedText>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-
-              <Label>Duration</Label>
-              <View style={styles.durationRow}>
-                {DURATIONS.map((d) => {
-                  const active = d === duration;
-                  return (
-                    <Pressable
-                      key={d}
-                      style={[styles.durationBtn, { backgroundColor: active ? AccentColor : colors.backgroundElement }]}
-                      onPress={() => setDuration(d)}>
-                      <ThemedText type="smallBold" style={{ color: active ? '#fff' : colors.text }}>
-                        {d === 1 ? '1 day' : `${d}d`}
-                      </ThemedText>
-                    </Pressable>
-                  );
-                })}
-              </View>
-
-              {profile && (
-                <ThemedText type="small" themeColor="textSecondary" style={styles.diffNote}>
-                  Difficulty will match your current level (difficulty {profile.suggested_difficulty}/5)
-                </ThemedText>
-              )}
-
-              {quota?.next_free_at ? (
-                <View style={[styles.plusCard, { backgroundColor: colors.backgroundElement }]}>
-                  <View style={styles.plusCardRow}>
-                    <Ionicons name="flash" size={16} color="#f59e0b" />
-                    <ThemedText type="smallBold">{`You've used your ${quota.limit} free drafts`}</ThemedText>
-                  </View>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {`Your next free draft unlocks ${fromNow(quota.next_free_at)}. VYRO+ gives you unlimited AI drafts.`}
-                  </ThemedText>
-                  <Pressable
-                    style={styles.generateBtn}
-                    onPress={() => { logEvent('vyro_plus_prompt_tapped', { source: 'ai_studio' }); router.push('/shop'); }}>
-                    <Ionicons name="flash" size={16} color="#fff" />
-                    <ThemedText style={{ color: '#fff', fontWeight: '600' }}>Get VYRO+</ThemedText>
-                  </Pressable>
-                </View>
-              ) : (
-                <Pressable
-                  style={[styles.generateBtn, { opacity: generating ? 0.5 : 1 }]}
-                  onPress={handleGenerate}
-                  disabled={generating}>
-                  {generating
-                    ? <ActivityIndicator color="#fff" />
-                    : (
-                      <>
-                        <Ionicons name="sparkles" size={16} color="#fff" />
-                        <ThemedText style={{ color: '#fff', fontWeight: '600' }}>Generate challenge</ThemedText>
-                      </>
-                    )
-                  }
-                </Pressable>
-              )}
-            </View>
-          )}
-
-          {result && (
-            <View style={styles.preview}>
-              <View style={[styles.draftCard, { backgroundColor: colors.backgroundElement }]}>
-                <ThemedText type="smallBold" themeColor="textSecondary">AI generated draft</ThemedText>
-                <ThemedText type="subtitle">{result.draft.title}</ThemedText>
-                <ThemedText themeColor="textSecondary">{result.draft.description}</ThemedText>
-                <View style={styles.draftMeta}>
-                  <ThemedText type="small" themeColor="textSecondary">{result.draft.category.replace('_', ' ')}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">·</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">Difficulty {result.draft.difficulty}/5</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">·</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {result.draft.duration_days} day{result.draft.duration_days !== 1 ? 's' : ''}
-                  </ThemedText>
-                </View>
-              </View>
-
-              <ThemedText type="smallBold" themeColor="textSecondary">Daily tasks</ThemedText>
-              {result.draft.tasks.map((task) => (
-                <View key={task.day_number} style={[styles.taskRow, { backgroundColor: colors.backgroundElement }]}>
-                  <View style={[styles.dayDot, { backgroundColor: colors.backgroundSelected }]}>
-                    <ThemedText type="small" themeColor="textSecondary">D{task.day_number}</ThemedText>
-                  </View>
-                  <View style={styles.taskText}>
-                    <ThemedText type="smallBold">{task.title}</ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
-                      {task.instructions}
-                    </ThemedText>
-                  </View>
-                </View>
-              ))}
-
-              <View style={styles.ratingRow}>
-                <ThemedText type="small" themeColor="textSecondary">Rate this draft:</ThemedText>
-                <View style={styles.stars}>
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Pressable key={s} onPress={() => submitRating(s)}>
-                      <Ionicons name={s <= rating ? 'star' : 'star-outline'} size={22} color={s <= rating ? '#f59e0b' : '#94a3b8'} />
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-
-              <Pressable
-                style={[styles.generateBtn, { backgroundColor: AccentColor, opacity: publishing ? 0.5 : 1 }]}
-                onPress={handlePublish}
-                disabled={publishing}>
-                {publishing
-                  ? <ActivityIndicator color="#fff" />
-                  : <ThemedText style={{ color: '#fff', fontWeight: '600' }}>Publish challenge</ThemedText>
-                }
-              </Pressable>
-
-              <Pressable
-                style={[styles.retryBtn, { borderColor: colors.backgroundSelected }]}
-                onPress={() => setResult(null)}>
-                <ThemedText type="small" themeColor="textSecondary">Try again</ThemedText>
-              </Pressable>
-            </View>
-          )}
-
-        </ScrollView>
+      <View style={styles.inputWrap}>
+        <TextInput
+          style={styles.input}
+          placeholder="What do you want to get better at?"
+          placeholderTextColor={UI.faint}
+          value={goal}
+          onChangeText={setGoal}
+          multiline
+          maxLength={200}
+        />
       </View>
-    </View>
+      {!goal && (
+        <View style={styles.examples}>
+          {EXAMPLES.map((e) => (
+            <Pressable key={e} onPress={() => setGoal(e)} hitSlop={4}>
+              <Text style={styles.example}>"{e}"</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+
+      <Text style={styles.label}>Category</Text>
+      <View style={styles.wrap}>
+        {CATEGORIES.map((c) => (
+          <View key={c.label} style={{ marginBottom: 8 }}>
+            <FilterChip label={c.label} active={category === c.key} onPress={() => setCategory(c.key)} />
+          </View>
+        ))}
+      </View>
+
+      <Text style={styles.label}>Length</Text>
+      <View style={styles.segment}>
+        {DURATIONS.map((d) => (
+          <Pressable
+            key={d}
+            onPress={() => setDuration(d)}
+            style={[styles.segItem, duration === d && styles.segItemActive]}>
+            <Text style={[styles.segText, duration === d && styles.segTextActive]}>
+              {d === 1 ? '1 day' : `${d} days`}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <Pressable
+        onPress={generate}
+        disabled={loading || outOfQuota}
+        style={({ pressed }) => [
+          styles.primary,
+          (loading || outOfQuota) && { opacity: 0.4 },
+          pressed && { opacity: 0.85 },
+        ]}>
+        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Generate</Text>}
+      </Pressable>
+      {quotaLine && <Text style={styles.quota}>{quotaLine}</Text>}
+
+      {result && (
+        <View style={styles.result}>
+          <Text style={styles.resultTitle}>{result.draft.title}</Text>
+          <Text style={styles.resultMeta}>
+            {result.draft.duration_days === 1 ? '1 day' : `${result.draft.duration_days} days`} ·{' '}
+            {DifficultyColors[result.draft.difficulty]?.label ?? 'Easy'}
+          </Text>
+          <Text style={styles.resultDesc}>{result.draft.description}</Text>
+
+          <View style={styles.tasks}>
+            {result.draft.tasks.slice(0, 5).map((t) => (
+              <View key={t.day_number} style={styles.task}>
+                <Text style={styles.taskDay}>Day {t.day_number}</Text>
+                <Text style={styles.taskTitle}>{t.title}</Text>
+              </View>
+            ))}
+            {result.draft.tasks.length > 5 && (
+              <Text style={styles.more}>and {result.draft.tasks.length - 5} more days</Text>
+            )}
+          </View>
+
+          <View style={styles.resultActions}>
+            <Pressable onPress={generate} disabled={loading || outOfQuota} style={styles.secondary}>
+              <Text style={styles.secondaryText}>Try again</Text>
+            </Pressable>
+            <Pressable
+              onPress={publish}
+              disabled={publishing}
+              style={({ pressed }) => [styles.primary, styles.flex1, pressed && { opacity: 0.85 }]}>
+              {publishing ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Publish</Text>}
+            </Pressable>
+          </View>
+        </View>
+      )}
+    </Screen>
   );
 }
 
-function fromNow(iso: string): string {
-  const hours = Math.ceil((new Date(iso).getTime() - Date.now()) / 3_600_000);
-  if (hours <= 1) return 'in under an hour';
-  if (hours < 24) return `in ${hours} h`;
-  const days = Math.floor(hours / 24);
-  const rest = hours % 24;
-  return `in ${days} day${days > 1 ? 's' : ''}${rest ? ` ${rest} h` : ''}`;
-}
-
-function Label({ children }: { children: string }) {
-  return <ThemedText type="smallBold" style={styles.label}>{children}</ThemedText>;
-}
-
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: HEADER_BG },
-  dec: { position: 'absolute', borderRadius: 999 },
-  decPink: { backgroundColor: 'rgba(255,45,120,0.14)' },
-  decPurple: { backgroundColor: 'rgba(191,95,255,0.12)' },
-  headerArea: { backgroundColor: HEADER_BG },
-  header: {
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.four,
-    gap: Spacing.one,
+  inputWrap: { marginHorizontal: 20, padding: 14, borderRadius: 14, backgroundColor: UI.surface },
+  input: {
+    fontFamily: InterFonts.regular,
+    fontSize: 17,
+    lineHeight: 23,
+    color: UI.text,
+    minHeight: 72,
+    textAlignVertical: 'top',
+    outlineStyle: 'none',
+  } as object,
+  examples: { paddingHorizontal: 20, paddingTop: 12, gap: 6 },
+  example: { fontFamily: InterFonts.regular, fontSize: 14, color: UI.muted },
+  label: {
+    fontFamily: InterFonts.medium,
+    fontSize: 14,
+    color: UI.muted,
+    paddingHorizontal: 20,
+    marginTop: 24,
+    marginBottom: 10,
   },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  title: { fontSize: 26, fontWeight: '800', color: '#fff', letterSpacing: -0.4 },
-  subtitle: { fontSize: 13, color: 'rgba(255,255,255,0.65)' },
-  quotaRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginTop: Spacing.one },
-  quotaTrack: {
-    flex: 1,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    overflow: 'hidden',
-  },
-  quotaFill: { height: '100%', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 2 },
-  quotaLabel: { fontSize: 11, color: 'rgba(255,255,255,0.65)' },
-  unlimitedRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: Spacing.one },
-  unlimitedLabel: { fontSize: 12, color: 'rgba(255,255,255,0.65)' },
-  sheet: {
-    flex: 1,
-    backgroundColor: '#F7F0FF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    overflow: 'hidden',
-  },
-  scroll: {
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
-    paddingBottom: BottomTabInset + Spacing.four,
-    gap: Spacing.three,
-  },
-  form: { gap: Spacing.three },
-  label: { marginBottom: -Spacing.two },
-  input: { borderRadius: 12, padding: Spacing.three, fontSize: 16, minHeight: 80, textAlignVertical: 'top' },
-  pills: { gap: Spacing.one, paddingVertical: Spacing.one },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.one + 2,
-    borderRadius: 99,
-  },
-  durationRow: { flexDirection: 'row', gap: Spacing.two },
-  durationBtn: { flex: 1, padding: Spacing.two, borderRadius: 12, alignItems: 'center' },
-  diffNote: { marginTop: -Spacing.two },
-  generateBtn: {
+  wrap: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20 },
+  segment: { flexDirection: 'row', marginHorizontal: 20, padding: 3, borderRadius: 12, backgroundColor: UI.surface },
+  segItem: { flex: 1, alignItems: 'center', paddingVertical: 9, borderRadius: 9 },
+  segItemActive: { backgroundColor: UI.surfaceHi },
+  segText: { fontFamily: InterFonts.medium, fontSize: 14, color: UI.muted },
+  segTextActive: { color: UI.text },
+  primary: {
+    height: 50,
+    marginHorizontal: 20,
+    marginTop: 28,
     borderRadius: 12,
-    padding: Spacing.three,
     alignItems: 'center',
-    backgroundColor: AccentColor,
-    flexDirection: 'row',
     justifyContent: 'center',
-    gap: Spacing.two,
+    backgroundColor: UI.accent,
   },
-  plusCard: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
-  plusCardRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  preview: { gap: Spacing.three },
-  draftCard: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
-  draftMeta: { flexDirection: 'row', gap: Spacing.two, flexWrap: 'wrap' },
-  taskRow: { borderRadius: 12, padding: Spacing.three, flexDirection: 'row', gap: Spacing.two, alignItems: 'flex-start' },
-  dayDot: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  taskText: { flex: 1, gap: 2 },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
-  stars: { flexDirection: 'row', gap: Spacing.one },
-  retryBtn: { borderRadius: 12, padding: Spacing.three, alignItems: 'center', borderWidth: 1 },
+  primaryText: { fontFamily: InterFonts.semiBold, fontSize: 16, color: '#fff' },
+  quota: { fontFamily: InterFonts.regular, fontSize: 13, color: UI.faint, textAlign: 'center', marginTop: 10 },
+  result: { marginHorizontal: 20, marginTop: 28, padding: 20, borderRadius: 16, backgroundColor: UI.surface },
+  resultTitle: { fontFamily: InterFonts.bold, fontSize: 20, lineHeight: 26, color: UI.text },
+  resultMeta: { fontFamily: InterFonts.regular, fontSize: 14, color: UI.muted, marginTop: 4 },
+  resultDesc: { fontFamily: InterFonts.regular, fontSize: 15, lineHeight: 22, color: UI.text, marginTop: 12 },
+  tasks: { marginTop: 16, gap: 10 },
+  task: { flexDirection: 'row', gap: 12 },
+  taskDay: { fontFamily: InterFonts.medium, fontSize: 14, color: UI.faint, width: 48 },
+  taskTitle: { fontFamily: InterFonts.regular, fontSize: 14, color: UI.text, flex: 1, lineHeight: 20 },
+  more: { fontFamily: InterFonts.regular, fontSize: 14, color: UI.faint, marginLeft: 60 },
+  resultActions: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  secondary: {
+    height: 50,
+    marginTop: 28,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: UI.surfaceHi,
+  },
+  secondaryText: { fontFamily: InterFonts.semiBold, fontSize: 16, color: UI.text },
+  flex1: { flex: 1, marginHorizontal: 0 },
 });

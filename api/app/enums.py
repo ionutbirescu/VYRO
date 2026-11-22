@@ -88,4 +88,23 @@ class AcquiredVia(StrEnum):
     PURCHASED = "purchased"
 
 
+class InterventionKind(StrEnum):
+    """What the streak rescue coach offered."""
+
+    # A lighter version of today's task that still counts.
+    TASK_SWAP = "task_swap"
+    # Why today's photo was rejected and how to retake it.
+    PROOF_RETAKE = "proof_retake"
+    # A friend is in the same challenge.
+    BUDDY = "buddy"
+    # The next challenge to join after one ended.
+    NEXT_CHALLENGE = "next_challenge"
+
+
+class InterventionStatus(StrEnum):
+    OPEN = "open"
+    ACCEPTED = "accepted"
+    DISMISSED = "dismissed"
+
+
 ALLOWED_DURATIONS = (1, 7, 14, 30)

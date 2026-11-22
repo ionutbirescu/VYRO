@@ -30,6 +30,8 @@ from app.enums import (
     Category,
     ChallengeSource,
     EventSource,
+    InterventionKind,
+    InterventionStatus,
     ParticipationStatus,
     PriceVariant,
     ProofStatus,
@@ -214,6 +216,31 @@ class Participation(Base):
     ended_at: Mapped[datetime | None]
 
     challenge: Mapped[Challenge] = relationship()
+    # Lighter versions of tasks the user accepted from the coach. Few rows, read with the
+    # participation to show today's task.
+    swaps: Mapped[list["TaskSwap"]] = relationship(lazy="selectin", viewonly=True)
+
+
+class TaskSwap(CreatedAtMixin, Base):
+    """A lighter version of one task for one participation, offered by the streak rescue coach
+    and accepted by the user. Proofs for that task are checked against it instead, for less XP."""
+
+    __tablename__ = "task_swaps"
+
+    participation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("participations.id", ondelete="CASCADE"), primary_key=True
+    )
+    task_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("challenge_tasks.id", ondelete="CASCADE"), primary_key=True
+    )
+    day_number: Mapped[int] = mapped_column(SmallInteger)
+    title: Mapped[str] = mapped_column(String(120))
+    instructions: Mapped[str] = mapped_column(Text)
+    proof_hint: Mapped[str] = mapped_column(String(280))
+    xp: Mapped[int]
+    intervention_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("coach_interventions.id", ondelete="SET NULL")
+    )
 
 
 # --- Proofs and verification ------------------------------------------------------------------
@@ -331,6 +358,54 @@ class AiGeneration(CreatedAtMixin, Base):
     published_at: Mapped[datetime | None]
     # Whether the user changed the draft before publishing it (edit-rate metric).
     edited_before_publish: Mapped[bool | None]
+
+
+class CoachConversation(TimestampMixin, Base):
+    """A chat with the AI coach. `contents` is the Gemini history exactly as exchanged."""
+
+    __tablename__ = "coach_conversations"
+    __table_args__ = (Index("ix_coach_conversations_user_updated", "user_id", "updated_at"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    contents: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, default=list, server_default=text("'[]'::jsonb")
+    )
+    # Function calls waiting for the user's approval: {"calls": [...]}.
+    pending: Mapped[dict[str, Any] | None]
+
+
+class CoachIntervention(CreatedAtMixin, Base):
+    """What the streak rescue coach offered a user on one local day: at most one per day."""
+
+    __tablename__ = "coach_interventions"
+    __table_args__ = (UniqueConstraint("user_id", "local_date"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    local_date: Mapped[date]
+    kind: Mapped[InterventionKind] = mapped_column(_enum(InterventionKind, "intervention_kind"))
+    status: Mapped[InterventionStatus] = mapped_column(
+        _enum(InterventionStatus, "intervention_status"),
+        default=InterventionStatus.OPEN,
+        server_default=InterventionStatus.OPEN.value,
+    )
+    participation_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("participations.id", ondelete="SET NULL")
+    )
+    challenge_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("challenges.id", ondelete="SET NULL")
+    )
+    message: Mapped[str] = mapped_column(Text)
+    # What accepting does: the lighter task for task_swap, the challenge to join for
+    # next_challenge, nothing for the others.
+    action: Mapped[dict[str, Any]] = mapped_column(default=dict, server_default=text("'{}'::jsonb"))
+    # "agent" when Gemini chose it, "rules" for the fallback without AI.
+    source: Mapped[str] = mapped_column(String(16))
+    model: Mapped[str | None] = mapped_column(String(128))
+    resolved_at: Mapped[datetime | None]
+    # When the user completed the task this was about, the same day (streak_rescued).
+    rescued_at: Mapped[datetime | None]
 
 
 # --- Analytics --------------------------------------------------------------------------------

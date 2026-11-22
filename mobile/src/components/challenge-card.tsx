@@ -1,16 +1,7 @@
-'use no memo';
-import { Ionicons } from '@expo/vector-icons';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Schemas } from '@/api/client';
-import { DifficultyColors, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-import { ThemedText } from '@/components/themed-text';
+import { CategoryDot, DifficultyColors, InterFonts, UI } from '@/constants/theme';
 
 type CompactProps = {
   variant: 'compact';
@@ -25,236 +16,92 @@ type FullProps = {
   onPress?: () => void;
 };
 
-type ChallengeCardProps = CompactProps | FullProps;
-
-function AnimCard({
-  children,
-  onPress,
-  style,
-}: {
-  children: React.ReactNode;
-  onPress?: () => void;
-  style?: object;
-}) {
-  const scale = useSharedValue(1);
-
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  return (
-    <Animated.View style={[animStyle, style]}>
-      <Pressable
-        onPress={onPress}
-        // eslint-disable-next-line react-hooks/immutability
-        onPressIn={() => { scale.value = withSpring(0.97, { mass: 0.3, damping: 12 }); }}
-        // eslint-disable-next-line react-hooks/immutability
-        onPressOut={() => { scale.value = withSpring(1, { mass: 0.3, damping: 12 }); }}
-      >
-        {children}
-      </Pressable>
-    </Animated.View>
-  );
+function categoryLabel(c: string) {
+  const s = c.replace(/_/g, ' ');
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-export function ChallengeCard(props: ChallengeCardProps) {
+export function ChallengeCard(props: CompactProps | FullProps) {
   const { challenge, onPress } = props;
-  const colors = useTheme();
-  const diff = DifficultyColors[challenge.difficulty] ?? DifficultyColors[1];
+  const dot = CategoryDot[challenge.category] ?? UI.faint;
 
   if (props.variant === 'compact') {
-    const progress = props.progress;
-    const pct = progress ? progress.completed / Math.max(progress.total, 1) : 0;
+    const total = Math.max(props.progress?.total ?? challenge.duration_days, 1);
+    const done = props.progress?.completed ?? 0;
+    const pct = Math.min(done / total, 1);
 
     return (
-      <AnimCard onPress={onPress} style={shadowStyle}>
-        <View style={[styles.compact, { backgroundColor: diff.color }]}>
-          {/* Decorative circle */}
-          <View style={styles.compactDec} />
-          <ThemedText style={styles.compactCategory}>
-            {challenge.category.replace('_', ' ')}
-          </ThemedText>
-          <ThemedText numberOfLines={2} style={styles.compactTitle}>
-            {challenge.title}
-          </ThemedText>
-
-          {progress ? (
-            <>
-              <View style={styles.progressTrack}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    { width: `${pct * 100}%` as `${number}%` },
-                  ]}
-                />
-              </View>
-              <ThemedText style={styles.compactSub}>
-                Day {progress.completed + 1} of {progress.total}
-              </ThemedText>
-            </>
-          ) : (
-            <ThemedText style={styles.compactSub}>
-              {challenge.duration_days === 1 ? '1 day' : `${challenge.duration_days} days`}
-            </ThemedText>
-          )}
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
+        <View style={styles.catRow}>
+          <View style={[styles.dot, { backgroundColor: dot }]} />
+          <Text style={styles.cat}>{categoryLabel(challenge.category)}</Text>
         </View>
-      </AnimCard>
+        <Text style={styles.cardTitle} numberOfLines={2}>{challenge.title}</Text>
+        <View style={{ flex: 1 }} />
+        <View style={styles.progressRow}>
+          <Text style={styles.progressNum}>{done}</Text>
+          <Text style={styles.progressOf}> / {total} done</Text>
+        </View>
+        <View style={styles.track}>
+          <View style={[styles.fill, { width: `${pct * 100}%` }]} />
+        </View>
+      </Pressable>
     );
   }
 
+  const diff = DifficultyColors[challenge.difficulty]?.label ?? 'Easy';
+  const days = challenge.duration_days === 1 ? '1 day' : `${challenge.duration_days} days`;
+
   return (
-    <AnimCard onPress={onPress} style={shadowStyle}>
-      <View style={[styles.full, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
-        <View style={styles.body}>
-          <View style={styles.topRow}>
-            <ThemedText type="small" themeColor="textSecondary" style={styles.categoryLabel}>
-              {challenge.category.replace(/_/g, ' ')}
-            </ThemedText>
-            <View style={[styles.diffBadge, { backgroundColor: diff.color + '20' }]}>
-              <ThemedText style={[styles.diffText, { color: diff.color }]}>
-                {diff.label}
-              </ThemedText>
-            </View>
-          </View>
-
-          <ThemedText style={styles.fullTitle} numberOfLines={2}>
-            {challenge.title}
-          </ThemedText>
-
-          {challenge.description ? (
-            <ThemedText type="small" themeColor="textSecondary" numberOfLines={2} style={styles.description}>
-              {challenge.description}
-            </ThemedText>
-          ) : null}
-
-          <View style={styles.footer}>
-            <View style={styles.footerItem}>
-              <Ionicons name="time-outline" size={12} color={colors.textSecondary} />
-              <ThemedText type="small" themeColor="textSecondary">
-                {challenge.duration_days === 1 ? '1 day' : `${challenge.duration_days} days`}
-              </ThemedText>
-            </View>
-            <ThemedText type="small" themeColor="textSecondary">·</ThemedText>
-            <View style={styles.footerItem}>
-              <Ionicons name="star" size={12} color="#f59e0b" />
-              <ThemedText type="small" themeColor="textSecondary">
-                {challenge.total_xp.toLocaleString()} XP
-              </ThemedText>
-            </View>
-            <ThemedText type="small" themeColor="textSecondary">·</ThemedText>
-            <View style={styles.footerItem}>
-              <Ionicons name="people-outline" size={12} color={colors.textSecondary} />
-              <ThemedText type="small" themeColor="textSecondary">
-                {challenge.participant_count.toLocaleString()}
-              </ThemedText>
-            </View>
-          </View>
-        </View>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
+      <View style={styles.catRow}>
+        <View style={[styles.dot, { backgroundColor: dot }]} />
+        <Text style={styles.cat}>{categoryLabel(challenge.category)}</Text>
       </View>
-    </AnimCard>
+      <Text style={styles.rowTitle}>{challenge.title}</Text>
+      {challenge.description ? (
+        <Text style={styles.rowDesc} numberOfLines={2}>{challenge.description}</Text>
+      ) : null}
+      <Text style={styles.meta}>
+        {days} · {diff} · {challenge.total_xp} XP
+        {challenge.participant_count > 0 ? ` · ${challenge.participant_count} joined` : ''}
+      </Text>
+    </Pressable>
   );
 }
 
-const shadowStyle = Platform.select({
-  ios: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 8,
-  },
-  default: {},
-});
-
 const styles = StyleSheet.create({
-  /* Compact */
-  compact: {
-    width: 160,
-    height: 172,
-    borderRadius: 20,
-    padding: Spacing.three,
-    gap: Spacing.two,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
+  card: {
+    width: 220,
+    height: 164,
+    marginRight: 12,
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: UI.surface,
   },
-  compactDec: {
-    position: 'absolute',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    bottom: -24,
-    right: -24,
-  },
-  compactCategory: {
-    textTransform: 'capitalize',
-    fontSize: 11,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.75)',
-  },
-  compactTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    lineHeight: 19,
-    color: '#fff',
-  },
-  progressTrack: {
-    height: 4,
-    borderRadius: 2,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.3)',
-  },
-  progressFill: { height: '100%', borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.9)' },
-  compactSub: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.75)',
-  },
+  cardPressed: { backgroundColor: UI.surfaceHi },
+  catRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  dot: { width: 7, height: 7, borderRadius: 4 },
+  cat: { fontFamily: InterFonts.medium, fontSize: 13, color: UI.muted },
+  cardTitle: { fontFamily: InterFonts.semiBold, fontSize: 17, lineHeight: 22, color: UI.text },
+  progressRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 8 },
+  progressNum: { fontFamily: InterFonts.bold, fontSize: 22, color: UI.text },
+  progressOf: { fontFamily: InterFonts.regular, fontSize: 13, color: UI.muted },
+  track: { height: 4, borderRadius: 2, backgroundColor: UI.surfaceHi, overflow: 'hidden' },
+  fill: { height: 4, borderRadius: 2, backgroundColor: UI.accent },
 
-  /* Full */
-  full: {
-    borderRadius: 14,
-    borderWidth: 1,
-    overflow: 'hidden',
+  row: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: UI.line,
   },
-  body: {
-    padding: Spacing.three,
-    gap: Spacing.two,
-  },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  categoryLabel: {
-    textTransform: 'capitalize',
-    fontSize: 12,
-  },
-  diffBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 99,
-  },
-  diffText: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.1,
-  },
-  fullTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    lineHeight: 22,
-  },
-  description: {
-    lineHeight: 20,
-  },
-  footer: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  footerItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
+  rowPressed: { backgroundColor: UI.surface },
+  rowTitle: { fontFamily: InterFonts.semiBold, fontSize: 16, lineHeight: 21, color: UI.text },
+  rowDesc: { fontFamily: InterFonts.regular, fontSize: 14, lineHeight: 20, color: UI.muted, marginTop: 4 },
+  meta: { fontFamily: InterFonts.regular, fontSize: 13, color: UI.faint, marginTop: 8 },
 });

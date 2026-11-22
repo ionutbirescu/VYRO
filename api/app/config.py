@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     # A cheaper model writes challenges; the stronger one judges photos.
     ai_generation_model: str = "gemini-3.5-flash-lite"
     ai_verification_model: str = "gemini-3.5-flash"
+    # The coach picks tools over several steps, which the stronger model does more reliably.
+    ai_coach_model: str = "gemini-3.5-flash"
+    ai_coach_daily_messages: int = 60
     # Free users' AI drafts per local day; VYRO+ is unlimited.
     # Free users get this many AI drafts per rolling window; VYRO+ is unlimited.
     ai_free_drafts: int = 2

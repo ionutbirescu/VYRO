@@ -10,7 +10,7 @@ from app import models
 from app.auth import CurrentUser
 from app.db import DbSession
 from app.enums import AiVerdict, ParticipationStatus, ProofStatus
-from app.models import ChallengeTask, Participation, User
+from app.models import ChallengeTask, Participation, TaskSwap, User
 from app.schemas.proofs import (
     DisputeCreate,
     Proof,
@@ -28,7 +28,7 @@ EXTENSIONS = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
 MIME_TYPES = {extension: mime for mime, extension in EXTENSIONS.items()}
 
 
-def _object_prefix(user: User, participation_id: UUID, task_id: UUID) -> str:
+def object_prefix(user: User, participation_id: UUID, task_id: UUID) -> str:
     return f"proofs/{user.id}/{participation_id}/{task_id}/"
 
 
@@ -88,7 +88,7 @@ def create_proof_upload_url(
 ) -> UploadUrl:
     """Step 1 of a proof: get a signed URL and PUT the photo to it."""
     _provable_task(db, user, body.participation_id, body.task_id, datetime.now(UTC))
-    prefix = _object_prefix(user, body.participation_id, body.task_id)
+    prefix = object_prefix(user, body.participation_id, body.task_id)
     object_path = f"{prefix}{uuid4()}.{EXTENSIONS[body.content_type]}"
     target = storage.upload_target(object_path, body.content_type)
     return UploadUrl(
@@ -112,7 +112,7 @@ def submit_proof(
     progress.lock(db, user)
     participation, task = _provable_task(db, user, body.participation_id, body.task_id, now)
 
-    prefix = re.escape(_object_prefix(user, body.participation_id, body.task_id))
+    prefix = re.escape(object_prefix(user, body.participation_id, body.task_id))
     if not re.fullmatch(rf"{prefix}[0-9a-f-]{{36}}\.(jpg|png|webp)", body.object_path):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "object_path is not from this upload")
     if not storage.exists(body.object_path):
@@ -130,7 +130,10 @@ def submit_proof(
 
     started = time.monotonic()
     mime_type = MIME_TYPES[proof.image_path.rsplit(".", 1)[1]]
-    result = verification.verify(task, storage.read(proof.image_path), mime_type, proof.caption)
+    checked_against = db.get(TaskSwap, (participation.id, task.id)) or task
+    result = verification.verify(
+        checked_against, storage.read(proof.image_path), mime_type, proof.caption
+    )
     proof.ai_verdict = result.verdict
     proof.ai_confidence = result.confidence
     proof.ai_reason = result.reason

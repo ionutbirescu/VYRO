@@ -1877,6 +1877,602 @@
         }
       }
     },
+    "/v1/coach/rescue": {
+      "get": {
+        "tags": [
+          "coach"
+        ],
+        "summary": "Get Streak Rescue",
+        "description": "Today's streak rescue suggestion, or null when nothing needs rescuing.\n\nCall it when the app opens. The first call of the day where a challenge is at risk lets the\ncoach choose one suggestion (a few seconds with AI); later calls return the same one. Works\nwithout AI too, with rule-based suggestions.",
+        "operationId": "get_streak_rescue",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/RescueOffer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Get Streak Rescue"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`registration_required`: signed in but no profile yet; call POST /v1/me",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Daily coach message limit reached"
+          },
+          "503": {
+            "description": "AI is not configured"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/coach/rescue/{intervention_id}/accept": {
+      "post": {
+        "tags": [
+          "coach"
+        ],
+        "summary": "Accept Streak Rescue",
+        "description": "Do what the suggestion offered: swap in the lighter task, or join the challenge.",
+        "operationId": "accept_streak_rescue",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "intervention_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Intervention Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueOffer"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`registration_required`: signed in but no profile yet; call POST /v1/me",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Daily coach message limit reached"
+          },
+          "503": {
+            "description": "AI is not configured"
+          },
+          "409": {
+            "description": "Already answered, or out of date"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/coach/rescue/{intervention_id}/dismiss": {
+      "post": {
+        "tags": [
+          "coach"
+        ],
+        "summary": "Dismiss Streak Rescue",
+        "description": "Not today. No other suggestion comes until tomorrow.",
+        "operationId": "dismiss_streak_rescue",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "intervention_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Intervention Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueOffer"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`registration_required`: signed in but no profile yet; call POST /v1/me",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Daily coach message limit reached"
+          },
+          "503": {
+            "description": "AI is not configured"
+          },
+          "409": {
+            "description": "Already answered, or out of date"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/coach/conversations/latest": {
+      "get": {
+        "tags": [
+          "coach"
+        ],
+        "summary": "Get Latest Conversation",
+        "description": "The user's most recent conversation, or null if they haven't talked to the coach.",
+        "operationId": "get_latest_conversation",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CoachConversation"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Get Latest Conversation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`registration_required`: signed in but no profile yet; call POST /v1/me",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Daily coach message limit reached"
+          },
+          "503": {
+            "description": "AI is not configured"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/coach/conversations": {
+      "post": {
+        "tags": [
+          "coach"
+        ],
+        "summary": "Start Conversation",
+        "description": "Start a new conversation with a first message. The reply can take several seconds.",
+        "operationId": "start_conversation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoachMessageIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachConversation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`registration_required`: signed in but no profile yet; call POST /v1/me",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Daily coach message limit reached"
+          },
+          "503": {
+            "description": "AI is not configured"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/coach/conversations/{conversation_id}/messages": {
+      "post": {
+        "tags": [
+          "coach"
+        ],
+        "summary": "Send Message",
+        "description": "Send a message. If an action is waiting for approval, this declines it.",
+        "operationId": "send_message",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoachMessageIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachConversation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`registration_required`: signed in but no profile yet; call POST /v1/me",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Daily coach message limit reached"
+          },
+          "503": {
+            "description": "AI is not configured"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/coach/conversations/{conversation_id}/decision": {
+      "post": {
+        "tags": [
+          "coach"
+        ],
+        "summary": "Decide Action",
+        "description": "Approve or decline the action the coach is waiting on.",
+        "operationId": "decide_action",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoachDecision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachConversation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`registration_required`: signed in but no profile yet; call POST /v1/me",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Daily coach message limit reached"
+          },
+          "503": {
+            "description": "AI is not configured"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/coach/conversations/{conversation_id}/retry": {
+      "post": {
+        "tags": [
+          "coach"
+        ],
+        "summary": "Retry Reply",
+        "description": "Ask the coach again after it failed to reply.",
+        "operationId": "retry_reply",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachConversation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`registration_required`: signed in but no profile yet; call POST /v1/me",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Daily coach message limit reached"
+          },
+          "503": {
+            "description": "AI is not configured"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/recommendations": {
       "get": {
         "tags": [
@@ -3503,6 +4099,121 @@
         ],
         "title": "ClientEvent"
       },
+      "CoachConversation": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/CoachMessage"
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "pending_action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PendingAction"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "An action the coach wants to take. Answer it with POST .../decision; sending a new message declines it."
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Set when the coach failed to reply. POST .../retry to try again."
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "messages",
+          "pending_action",
+          "updated_at"
+        ],
+        "title": "CoachConversation"
+      },
+      "CoachDecision": {
+        "properties": {
+          "approve": {
+            "type": "boolean",
+            "title": "Approve"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "approve"
+        ],
+        "title": "CoachDecision"
+      },
+      "CoachMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "coach"
+            ],
+            "title": "Role"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "tools_used": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tools Used",
+            "description": "What the coach looked up or did before this reply, e.g. 'Checked your challenges'. Empty for user messages."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "role",
+          "text",
+          "tools_used"
+        ],
+        "title": "CoachMessage"
+      },
+      "CoachMessageIn": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "CoachMessageIn"
+      },
       "Comment": {
         "properties": {
           "id": {
@@ -3853,6 +4564,26 @@
         ],
         "title": "HealthStatus"
       },
+      "InterventionKind": {
+        "type": "string",
+        "enum": [
+          "task_swap",
+          "proof_retake",
+          "buddy",
+          "next_challenge"
+        ],
+        "title": "InterventionKind",
+        "description": "What the streak rescue coach offered."
+      },
+      "InterventionStatus": {
+        "type": "string",
+        "enum": [
+          "open",
+          "accepted",
+          "dismissed"
+        ],
+        "title": "InterventionStatus"
+      },
       "JoinRequest": {
         "properties": {
           "recommendation_id": {
@@ -3951,6 +4682,30 @@
           "last_progress_at"
         ],
         "title": "LeaderboardEntry"
+      },
+      "LighterTask": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "instructions": {
+            "type": "string",
+            "title": "Instructions"
+          },
+          "proof_hint": {
+            "type": "string",
+            "title": "Proof Hint"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title",
+          "instructions",
+          "proof_hint"
+        ],
+        "title": "LighterTask"
       },
       "Me": {
         "properties": {
@@ -4283,6 +5038,17 @@
               }
             ],
             "title": "Ended At"
+          },
+          "swapped_task": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SwappedTask"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The lighter version of the next task, if the user took one"
           }
         },
         "additionalProperties": false,
@@ -4411,6 +5177,17 @@
             ],
             "title": "Ended At"
           },
+          "swapped_task": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SwappedTask"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The lighter version of the next task, if the user took one"
+          },
           "challenge": {
             "$ref": "#/components/schemas/ChallengeSummary"
           }
@@ -4431,6 +5208,23 @@
           "challenge"
         ],
         "title": "ParticipationWithChallenge"
+      },
+      "PendingAction": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "title": "Question",
+            "examples": [
+              "Join “Morning run”?"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "PendingAction"
       },
       "Product": {
         "properties": {
@@ -4835,6 +5629,86 @@
         ],
         "title": "ReportTarget"
       },
+      "RescueOffer": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/InterventionKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/InterventionStatus"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "What the coach says, one or two sentences"
+          },
+          "accept_label": {
+            "type": "string",
+            "title": "Accept Label",
+            "examples": [
+              "Use the lighter version"
+            ]
+          },
+          "challenge_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Challenge Id",
+            "description": "The challenge it's about; open it after accepting"
+          },
+          "lighter_task": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LighterTask"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For task_swap: what accepting turns today's task into"
+          },
+          "chosen_by": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "rules"
+            ],
+            "title": "Chosen By",
+            "description": "agent: Gemini picked it. rules: the fallback without AI"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "message",
+          "accept_label",
+          "challenge_id",
+          "lighter_task",
+          "chosen_by",
+          "created_at"
+        ],
+        "title": "RescueOffer",
+        "description": "Today's streak rescue suggestion. The app shows it on Home while `status` is open."
+      },
       "Rewards": {
         "properties": {
           "xp_awarded": {
@@ -4886,6 +5760,43 @@
         ],
         "title": "Rewards",
         "description": "What an action earned, for the app's celebration UI."
+      },
+      "SwappedTask": {
+        "properties": {
+          "day_number": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Day Number"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "instructions": {
+            "type": "string",
+            "title": "Instructions"
+          },
+          "proof_hint": {
+            "type": "string",
+            "title": "Proof Hint"
+          },
+          "xp": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Xp"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "day_number",
+          "title",
+          "instructions",
+          "proof_hint",
+          "xp"
+        ],
+        "title": "SwappedTask",
+        "description": "A lighter version of the next task, accepted from the coach. Show it instead of that\nday's task; proofs are checked against it and earn its (lower) XP."
       },
       "Task": {
         "properties": {

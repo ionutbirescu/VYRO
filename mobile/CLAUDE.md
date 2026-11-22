@@ -5,61 +5,40 @@
 - React Native + TypeScript, no NativeWind
 - Styling: `StyleSheet.create` exclusively — never inline styles for layout
 - Animations: `react-native-reanimated` (spring press effects on interactive cards)
-- Font: **Inter** via `@expo-google-fonts/inter` — always use `InterFonts.*` constants
+- Font: **SpaceGrotesk** via `@expo-google-fonts/space-grotesk` — always use `InterFonts.*` constants (alias kept for compatibility)
 
-## Color palette — GTA6 / Miami Vice theme
+## Anti-AI-Slop Rules (tab screens)
+- **No emojis in UI chrome** (headers, stats, buttons, chips). Use Ionicons when an icon is really needed.
+- **No gradients** on cards or buttons. Primary buttons are solid `UI.accent`.
+- **One accent per screen.** Everything else is `UI.text` / `UI.muted` / `UI.faint` on `UI.surface`.
+- **Lists are rows with hairline dividers**, not floating shadowed cards. Cards only for horizontal carousels and summary blocks.
+- **No fake data or dead controls.** Don't ship hardcoded achievements, promos, or buttons that don't call the API.
+- **Sentence case labels.** No uppercase + letter-spacing section labels.
+- **Always set `fontFamily: InterFonts.*`** on every Text style (the values are SpaceGrotesk). `fontWeight` alone falls back to the system font.
+- On web, `Alert.alert` with buttons does nothing; use `window.confirm`/`window.alert` when `Platform.OS === 'web'`.
 
-Import from `@/constants/theme`:
+## Colors
 
+Tab screens use the `UI` palette from `@/constants/theme`:
 ```ts
-BrandColors.headerBg   // '#0D0A1E' — deep night sky, used as all screen headers
-BrandColors.pink       // '#FF2D78' — primary accent (buttons, links, focus rings)
-BrandColors.cyan       // '#00D9C8' — secondary accent
-BrandColors.orange     // '#FF6B00' — energy/streak
-BrandColors.purple     // '#BF5FFF' — extreme difficulty, special states
-BrandColors.green      // '#00C57E' — success, easy difficulty
-
-AccentColor            // = BrandColors.pink
-StreakColor            // = BrandColors.orange
-SuccessColor           // = BrandColors.green
+UI.bg, UI.surface, UI.surfaceHi, UI.line, UI.text, UI.muted, UI.faint, UI.accent, UI.success
+CategoryDot[category]  // small colored dot next to a category name
 ```
+`BrandColors`, `GradientPrimary` and `useTheme()` still exist for older stack screens.
 
-Theme-aware colors (use `useTheme()` hook):
-```ts
-colors.text               // primary text
-colors.textSecondary      // muted text
-colors.background         // screen background
-colors.backgroundElement  // card/input surface
-colors.backgroundSelected // selected state / dividers
-```
+## Screen layout pattern for tab screens
 
-## Screen layout pattern — REQUIRED for all tab screens
-
-Every tab screen and modal MUST use this pattern:
+Use the shared wrapper from `@/components/screen`. It handles safe area, max width on web and tab bar padding:
 ```tsx
-const HEADER_BG = BrandColors.headerBg; // '#0D0A1E'
-
-<View style={{ flex: 1, backgroundColor: HEADER_BG }}>
-  {/* Decorative glows — always add both */}
-  <View style={[{ position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,45,120,0.14)' },
-    { width: 240, height: 240, top: -80, right: -60 }]} pointerEvents="none" />
-  <View style={[{ position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(0,217,200,0.10)' },
-    { width: 120, height: 120, top: 20, right: 50 }]} pointerEvents="none" />
-
-  <SafeAreaView edges={['top', 'left', 'right']} style={{ backgroundColor: HEADER_BG }}>
-    {/* White title, rgba(255,255,255,0.65) subtitle */}
-  </SafeAreaView>
-
-  {/* White/lavender sheet */}
-  <View style={{ flex: 1, backgroundColor: '#F7F0FF', borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' }}>
-    <ScrollView ...>
-      {/* content */}
-    </ScrollView>
-  </View>
-</View>
+<Screen>
+  <ScreenHeader title="Explore" subtitle="optional" />
+  <SectionHeader title="In progress" />
+  {/* content */}
+</Screen>
 ```
+No decorative glows, no dark header + light sheet.
 
-Stack screens (pushed modals) inherit the dark header from `_layout.tsx` — no need to add your own header.
+Stack screens (pushed modals) inherit the dark header from `_layout.tsx`.
 
 ## Components
 

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.enums import ParticipationStatus, Visibility
 from app.models import Challenge, ChallengeTask, Follow, Participation, User
-from app.schemas.challenges import ChallengeSummary
+from app.schemas.challenges import ChallengeSummary, SwappedTask
 from app.schemas.challenges import Participation as ParticipationOut
 from app.schemas.users import UserSummary
 
@@ -91,6 +91,8 @@ def summaries(db: Session, challenges: Sequence[Challenge]) -> list[ChallengeSum
 
 def participation_out(participation: Participation) -> ParticipationOut:
     active = participation.status is ParticipationStatus.ACTIVE
+    next_day = participation.completed_tasks + 1
+    swap = next((s for s in participation.swaps if s.day_number == next_day), None)
     return ParticipationOut(
         id=participation.id,
         challenge_id=participation.challenge_id,
@@ -98,8 +100,9 @@ def participation_out(participation: Participation) -> ParticipationOut:
         completed_tasks=participation.completed_tasks,
         total_tasks=participation.challenge.duration_days,
         xp_earned=participation.xp_earned,
-        next_day_number=participation.completed_tasks + 1 if active else None,
+        next_day_number=next_day if active else None,
         joined_at=participation.joined_at,
         last_progress_at=participation.last_progress_at,
         ended_at=participation.ended_at,
+        swapped_task=SwappedTask.model_validate(swap) if swap and active else None,
     )

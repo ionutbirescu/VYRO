@@ -18,11 +18,11 @@ export function Input({ label, leftIcon, error, isPassword, style, ...props }: I
   const [focused, setFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const borderColor = error
-    ? '#EF4444'
+  const bgColor = error
+    ? '#3D1A1A'
     : focused
-      ? AccentColor
-      : colors.backgroundSelected;
+      ? '#241D3D'
+      : colors.backgroundElement;
 
   return (
     <View style={styles.wrapper}>
@@ -31,7 +31,7 @@ export function Input({ label, leftIcon, error, isPassword, style, ...props }: I
           {label}
         </ThemedText>
       )}
-      <View style={[styles.container, { backgroundColor: colors.backgroundElement, borderColor }]}>
+      <View style={[styles.container, { backgroundColor: bgColor }]}>
         {leftIcon && (
           <Ionicons
             name={leftIcon}
@@ -83,7 +83,6 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
     borderRadius: 14,
     paddingHorizontal: Spacing.three,
     paddingVertical: 14,

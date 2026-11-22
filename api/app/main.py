@@ -2,13 +2,14 @@ from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
 
-from app import __version__
+from app import __version__, mcp_server
 from app.auth import AUTH_RESPONSES
 from app.config import get_settings
 from app.routers import (
     activity,
     ai,
     challenges,
+    coach,
     dev_uploads,
     events,
     gamification,
@@ -43,6 +44,7 @@ def create_app() -> FastAPI:
         version=__version__,
         description=DESCRIPTION,
         generate_unique_id_function=_operation_id,
+        lifespan=mcp_server.lifespan,
     )
     app.add_middleware(
         CORSMiddleware,
@@ -58,6 +60,7 @@ def create_app() -> FastAPI:
         challenges,
         proofs,
         ai,
+        coach,
         recommendations,
         leaderboard,
         activity,
@@ -70,6 +73,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(v1)
+    app.state.mcp_manager = mcp_server.install(app)
     if not settings.proof_bucket and settings.env != "prod":
         app.include_router(dev_uploads.router)
     return app

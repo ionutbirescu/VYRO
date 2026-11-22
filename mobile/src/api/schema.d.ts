@@ -391,6 +391,170 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/coach/rescue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Streak Rescue
+         * @description Today's streak rescue suggestion, or null when nothing needs rescuing.
+         *
+         *     Call it when the app opens. The first call of the day where a challenge is at risk lets the
+         *     coach choose one suggestion (a few seconds with AI); later calls return the same one. Works
+         *     without AI too, with rule-based suggestions.
+         */
+        get: operations["get_streak_rescue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/coach/rescue/{intervention_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept Streak Rescue
+         * @description Do what the suggestion offered: swap in the lighter task, or join the challenge.
+         */
+        post: operations["accept_streak_rescue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/coach/rescue/{intervention_id}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dismiss Streak Rescue
+         * @description Not today. No other suggestion comes until tomorrow.
+         */
+        post: operations["dismiss_streak_rescue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/coach/conversations/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Latest Conversation
+         * @description The user's most recent conversation, or null if they haven't talked to the coach.
+         */
+        get: operations["get_latest_conversation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/coach/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Conversation
+         * @description Start a new conversation with a first message. The reply can take several seconds.
+         */
+        post: operations["start_conversation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/coach/conversations/{conversation_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send Message
+         * @description Send a message. If an action is waiting for approval, this declines it.
+         */
+        post: operations["send_message"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/coach/conversations/{conversation_id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decide Action
+         * @description Approve or decline the action the coach is waiting on.
+         */
+        post: operations["decide_action"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/coach/conversations/{conversation_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry Reply
+         * @description Ask the coach again after it failed to reply.
+         */
+        post: operations["retry_reply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/recommendations": {
         parameters: {
             query?: never;
@@ -932,6 +1096,53 @@ export interface components {
              */
             client_ts?: string | null;
         };
+        /** CoachConversation */
+        CoachConversation: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Messages */
+            messages: components["schemas"]["CoachMessage"][];
+            /** @description An action the coach wants to take. Answer it with POST .../decision; sending a new message declines it. */
+            pending_action: components["schemas"]["PendingAction"] | null;
+            /**
+             * Error
+             * @description Set when the coach failed to reply. POST .../retry to try again.
+             */
+            error?: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** CoachDecision */
+        CoachDecision: {
+            /** Approve */
+            approve: boolean;
+        };
+        /** CoachMessage */
+        CoachMessage: {
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "coach";
+            /** Text */
+            text: string;
+            /**
+             * Tools Used
+             * @description What the coach looked up or did before this reply, e.g. 'Checked your challenges'. Empty for user messages.
+             */
+            tools_used: string[];
+        };
+        /** CoachMessageIn */
+        CoachMessageIn: {
+            /** Text */
+            text: string;
+        };
         /** Comment */
         Comment: {
             /**
@@ -1076,6 +1287,17 @@ export interface components {
             /** Version */
             version: string;
         };
+        /**
+         * InterventionKind
+         * @description What the streak rescue coach offered.
+         * @enum {string}
+         */
+        InterventionKind: "task_swap" | "proof_retake" | "buddy" | "next_challenge";
+        /**
+         * InterventionStatus
+         * @enum {string}
+         */
+        InterventionStatus: "open" | "accepted" | "dismissed";
         /** JoinRequest */
         JoinRequest: {
             /**
@@ -1107,6 +1329,15 @@ export interface components {
             xp_earned: number;
             /** Last Progress At */
             last_progress_at: string | null;
+        };
+        /** LighterTask */
+        LighterTask: {
+            /** Title */
+            title: string;
+            /** Instructions */
+            instructions: string;
+            /** Proof Hint */
+            proof_hint: string;
         };
         /** Me */
         Me: {
@@ -1238,6 +1469,8 @@ export interface components {
             last_progress_at: string | null;
             /** Ended At */
             ended_at: string | null;
+            /** @description The lighter version of the next task, if the user took one */
+            swapped_task?: components["schemas"]["SwappedTask"] | null;
         };
         /** ParticipationPage */
         ParticipationPage: {
@@ -1284,7 +1517,17 @@ export interface components {
             last_progress_at: string | null;
             /** Ended At */
             ended_at: string | null;
+            /** @description The lighter version of the next task, if the user took one */
+            swapped_task?: components["schemas"]["SwappedTask"] | null;
             challenge: components["schemas"]["ChallengeSummary"];
+        };
+        /** PendingAction */
+        PendingAction: {
+            /**
+             * Question
+             * @example Join “Morning run”?
+             */
+            question: string;
         };
         /** Product */
         Product: {
@@ -1443,6 +1686,47 @@ export interface components {
          */
         ReportTarget: "user" | "challenge" | "proof" | "message" | "comment";
         /**
+         * RescueOffer
+         * @description Today's streak rescue suggestion. The app shows it on Home while `status` is open.
+         */
+        RescueOffer: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["InterventionKind"];
+            status: components["schemas"]["InterventionStatus"];
+            /**
+             * Message
+             * @description What the coach says, one or two sentences
+             */
+            message: string;
+            /**
+             * Accept Label
+             * @example Use the lighter version
+             */
+            accept_label: string;
+            /**
+             * Challenge Id
+             * @description The challenge it's about; open it after accepting
+             */
+            challenge_id: string | null;
+            /** @description For task_swap: what accepting turns today's task into */
+            lighter_task: components["schemas"]["LighterTask"] | null;
+            /**
+             * Chosen By
+             * @description agent: Gemini picked it. rules: the fallback without AI
+             * @enum {string}
+             */
+            chosen_by: "agent" | "rules";
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
          * Rewards
          * @description What an action earned, for the app's celebration UI.
          */
@@ -1461,6 +1745,23 @@ export interface components {
             challenge_completed: boolean;
             /** New Achievements */
             new_achievements: components["schemas"]["Achievement"][];
+        };
+        /**
+         * SwappedTask
+         * @description A lighter version of the next task, accepted from the coach. Show it instead of that
+         *     day's task; proofs are checked against it and earn its (lower) XP.
+         */
+        SwappedTask: {
+            /** Day Number */
+            day_number: number;
+            /** Title */
+            title: string;
+            /** Instructions */
+            instructions: string;
+            /** Proof Hint */
+            proof_hint: string;
+            /** Xp */
+            xp: number;
         };
         /** Task */
         Task: {
@@ -2861,6 +3162,512 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    get_streak_rescue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RescueOffer"] | null;
+                };
+            };
+            /** @description Missing, invalid or expired bearer token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `registration_required`: signed in but no profile yet; call POST /v1/me */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Daily coach message limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description AI is not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    accept_streak_rescue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                intervention_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RescueOffer"];
+                };
+            };
+            /** @description Missing, invalid or expired bearer token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `registration_required`: signed in but no profile yet; call POST /v1/me */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Already answered, or out of date */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Daily coach message limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description AI is not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    dismiss_streak_rescue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                intervention_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RescueOffer"];
+                };
+            };
+            /** @description Missing, invalid or expired bearer token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `registration_required`: signed in but no profile yet; call POST /v1/me */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Already answered, or out of date */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Daily coach message limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description AI is not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_latest_conversation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachConversation"] | null;
+                };
+            };
+            /** @description Missing, invalid or expired bearer token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `registration_required`: signed in but no profile yet; call POST /v1/me */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Daily coach message limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description AI is not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    start_conversation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoachMessageIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachConversation"];
+                };
+            };
+            /** @description Missing, invalid or expired bearer token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `registration_required`: signed in but no profile yet; call POST /v1/me */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Daily coach message limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description AI is not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    send_message: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoachMessageIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachConversation"];
+                };
+            };
+            /** @description Missing, invalid or expired bearer token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `registration_required`: signed in but no profile yet; call POST /v1/me */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Daily coach message limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description AI is not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    decide_action: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoachDecision"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachConversation"];
+                };
+            };
+            /** @description Missing, invalid or expired bearer token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `registration_required`: signed in but no profile yet; call POST /v1/me */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Daily coach message limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description AI is not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    retry_reply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachConversation"];
+                };
+            };
+            /** @description Missing, invalid or expired bearer token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `registration_required`: signed in but no profile yet; call POST /v1/me */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Daily coach message limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description AI is not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

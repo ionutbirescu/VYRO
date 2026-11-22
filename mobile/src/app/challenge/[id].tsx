@@ -277,6 +277,12 @@ export default function ChallengeScreen() {
             .map((task) => {
               const done = isActive && task.day_number < nextDay;
               const current = isActive && task.day_number === nextDay;
+              // A lighter version accepted from the coach replaces today's task.
+              const swap =
+                current && participation?.swapped_task?.day_number === task.day_number
+                  ? participation.swapped_task
+                  : null;
+              const shown = swap ?? task;
               return (
                 <View
                   key={task.id}
@@ -305,14 +311,19 @@ export default function ChallengeScreen() {
                       }
                     </View>
                     <ThemedText type="smallBold" style={styles.taskTitle}>
-                      {task.title}
+                      {shown.title}
                     </ThemedText>
                     <ThemedText type="small" themeColor="textSecondary">
-                      +{task.xp} XP
+                      +{shown.xp} XP
                     </ThemedText>
                   </View>
+                  {swap && (
+                    <ThemedText type="small" themeColor="textSecondary" style={styles.taskInstructions}>
+                      Lighter version from your coach. It still counts for your streak.
+                    </ThemedText>
+                  )}
                   <ThemedText type="small" themeColor="textSecondary" style={styles.taskInstructions}>
-                    {task.instructions}
+                    {shown.instructions}
                   </ThemedText>
                   {current && participation && (
                     <Pressable
@@ -323,8 +334,8 @@ export default function ChallengeScreen() {
                           params: {
                             task_id: task.id,
                             participation_id: participation.id,
-                            task_title: task.title,
-                            proof_hint: task.proof_hint,
+                            task_title: shown.title,
+                            proof_hint: shown.proof_hint,
                             challenge_id: challenge.id,
                           },
                         })

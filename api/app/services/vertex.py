@@ -76,6 +76,80 @@ def _token_counts(payload: dict[str, Any]) -> tuple[int | None, int | None]:
     return usage.get("promptTokenCount"), output or None
 
 
+@dataclass(frozen=True)
+class Turn:
+    """One model turn: its content (to append to the history unchanged, since Gemini needs the
+    thought signatures back) and the function calls in it."""
+
+    content: dict[str, Any]
+    model: str
+    input_tokens: int | None
+    output_tokens: int | None
+
+    @property
+    def function_calls(self) -> list[dict[str, Any]]:
+        return [part["functionCall"] for part in self.content["parts"] if "functionCall" in part]
+
+    @property
+    def text(self) -> str:
+        return "".join(
+            part.get("text", "") for part in self.content["parts"] if not part.get("thought")
+        ).strip()
+
+
+def chat(
+    model: str,
+    system: str,
+    contents: list[dict[str, Any]],
+    functions: list[dict[str, Any]],
+    *,
+    max_output_tokens: int = 4096,
+    must_call: list[str] | None = None,
+) -> Turn:
+    """One step of a function-calling conversation. Raises AiError on any failure.
+
+    With `must_call`, the model has to answer with a call to one of those functions (all of
+    them if the list is empty) instead of text.
+    """
+    if not enabled():
+        raise AiError("AI is not configured (VYRO_AI_PROJECT is unset)")
+    calling: dict[str, Any] = {"mode": "AUTO"}
+    if must_call is not None:
+        calling = {"mode": "ANY"}
+        if must_call:
+            calling["allowedFunctionNames"] = must_call
+    body = {
+        "systemInstruction": {"parts": [text_part(system)]},
+        "contents": contents,
+        "tools": [{"functionDeclarations": functions}],
+        "toolConfig": {"functionCallingConfig": calling},
+        "generationConfig": {
+            "maxOutputTokens": max_output_tokens,
+            "thinkingConfig": {"thinkingLevel": "LOW"},
+        },
+    }
+    try:
+        response = _session().post(_url(model), json=body, timeout=TIMEOUT_SECONDS)
+    except (requests.RequestException, GoogleAuthError) as error:
+        raise AiError(f"Vertex AI is unreachable: {error}") from error
+    if response.status_code != 200:
+        raise AiError(f"Vertex AI answered {response.status_code}: {response.text[:500]}")
+
+    payload = response.json()
+    input_tokens, output_tokens = _token_counts(payload)
+    candidates = payload.get("candidates") or []
+    if not candidates:
+        feedback = payload.get("promptFeedback", {}).get("blockReason", "no candidates")
+        raise AiError(f"The model gave no answer: {feedback}", input_tokens, output_tokens)
+    candidate = candidates[0]
+    finish = candidate.get("finishReason", "STOP")
+    content = candidate.get("content") or {}
+    if finish != "STOP" or not content.get("parts"):
+        raise AiError(f"The answer was cut short: {finish}", input_tokens, output_tokens)
+    content = {"role": "model", "parts": content["parts"]}
+    return Turn(content, payload.get("modelVersion", model), input_tokens, output_tokens)
+
+
 def generate_json(
     model: str,
     system: str,
