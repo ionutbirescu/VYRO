@@ -33,7 +33,7 @@ export function Button({
   const scale = useSharedValue(1);
 
   const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ scale: scale.get() }],
   }));
 
   const bg: Record<ButtonVariant, string> = {
@@ -83,8 +83,8 @@ export function Button({
     <Animated.View style={[animStyle, fullWidth && styles.fullWidth]}>
       <Pressable
         onPress={isDisabled ? undefined : onPress}
-        onPressIn={() => { scale.value = withSpring(0.97, { mass: 0.3, damping: 12 }); }}
-        onPressOut={() => { scale.value = withSpring(1, { mass: 0.3, damping: 12 }); }}
+        onPressIn={() => scale.set(withSpring(0.97, { mass: 0.3, damping: 12 }))}
+        onPressOut={() => scale.set(withSpring(1, { mass: 0.3, damping: 12 }))}
         style={{ opacity: isDisabled ? 0.55 : 1 }}
       >
         {variant === 'primary' ? (

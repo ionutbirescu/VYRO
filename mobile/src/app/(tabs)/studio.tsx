@@ -109,7 +109,7 @@ export default function StudioScreen() {
         <View style={styles.examples}>
           {EXAMPLES.map((e) => (
             <Pressable key={e} onPress={() => setGoal(e)} hitSlop={4}>
-              <Text style={styles.example}>"{e}"</Text>
+              <Text style={styles.example}>{`"${e}"`}</Text>
             </Pressable>
           ))}
         </View>

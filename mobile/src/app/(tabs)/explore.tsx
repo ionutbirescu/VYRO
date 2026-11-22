@@ -23,10 +23,14 @@ const FILTERS = [
 ];
 
 export default function ExploreScreen() {
-  const [challenges, setChallenges] = useState<Schemas['ChallengeSummary'][] | null>(null);
   const [filter, setFilter] = useState('all');
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
+  // Each result remembers which filter + search it was fetched for. While it doesn't match the
+  // current one the list shows the loader, so the effect never has to reset state itself.
+  const [result, setResult] = useState<{ key: string; items: Schemas['ChallengeSummary'][] } | null>(null);
+  const requestKey = `${filter}|${debounced}`;
+  const challenges = result?.key === requestKey ? result.items : null;
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(query.trim()), 300);
@@ -34,7 +38,7 @@ export default function ExploreScreen() {
   }, [query]);
 
   useEffect(() => {
-    setChallenges(null);
+    let stale = false;
     api.GET('/v1/challenges', {
       params: {
         query: {
@@ -43,8 +47,12 @@ export default function ExploreScreen() {
           limit: 30,
         },
       },
-    }).then(({ data }) => setChallenges(data?.items ?? []), () => setChallenges([]));
-  }, [filter, debounced]);
+    }).then(
+      ({ data }) => { if (!stale) setResult({ key: requestKey, items: data?.items ?? [] }); },
+      () => { if (!stale) setResult({ key: requestKey, items: [] }); },
+    );
+    return () => { stale = true; };
+  }, [filter, debounced, requestKey]);
 
   return (
     <Screen>
