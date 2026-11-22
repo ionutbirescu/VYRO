@@ -1,56 +1,58 @@
-﻿import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
-import { Button, Checkbox, Snackbar, TextInput as PaperInput } from 'react-native-paper';
+﻿import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { api } from '@/api/client';
 import { useAuth } from '@/contexts/auth';
-import { AccentColor, Spacing } from '@/constants/theme';
+import { AccentColor, BrandColors, InterFonts, Spacing } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useTheme } from '@/hooks/use-theme';
 
 const DETECTED_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+function Checkbox({ checked, onToggle, label }: { checked: boolean; onToggle: () => void; label: React.ReactNode }) {
+  const colors = useTheme();
+  return (
+    <Pressable style={styles.checkRow} onPress={onToggle}>
+      <View style={[
+        styles.checkBox,
+        { borderColor: checked ? AccentColor : colors.backgroundSelected,
+          backgroundColor: checked ? AccentColor : 'transparent' },
+      ]}>
+        {checked && <Ionicons name="checkmark" size={14} color="#fff" />}
+      </View>
+      <View style={styles.checkLabelWrap}>
+        {label}
+      </View>
+    </Pressable>
+  );
+}
 
 export default function CreateProfileScreen() {
   const { refreshProfile, signOut } = useAuth();
   const colors = useTheme();
 
-  const [username, setUsername] = useState('');
-  const [displayName, setDisplayName] = useState('');
+  const [username, setUsername]           = useState('');
+  const [displayName, setDisplayName]     = useState('');
   const [confirmsAdult, setConfirmsAdult] = useState(false);
   const [researchConsent, setResearchConsent] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [snackMsg, setSnackMsg] = useState('');
-  const [snackVisible, setSnackVisible] = useState(false);
-
-  function showError(msg: string) {
-    setSnackMsg(msg);
-    setSnackVisible(true);
-  }
+  const [loading, setLoading]             = useState(false);
+  const [error, setError]                 = useState('');
 
   async function handleCreate() {
-    if (!username || !displayName) {
-      showError('Please fill in all fields.');
-      return;
-    }
+    if (!username || !displayName) { setError('Please fill in all fields.'); return; }
     if (!/^[a-z0-9_.]{3,32}$/.test(username)) {
-      showError('Username: lowercase letters, digits, _ and . only; 3–32 characters.');
+      setError('Username: lowercase letters, digits, _ and . only; 3–32 characters.');
       return;
     }
-    if (!confirmsAdult) {
-      showError('You must confirm you are 18 or older to use VYRO.');
-      return;
-    }
+    if (!confirmsAdult) { setError('You must confirm you are 18 or older to use VYRO.'); return; }
 
+    setError('');
     setLoading(true);
     try {
-      const { error } = await api.POST('/v1/me', {
+      const { error: apiErr } = await api.POST('/v1/me', {
         body: {
           username,
           display_name: displayName,
@@ -59,22 +61,19 @@ export default function CreateProfileScreen() {
           research_consent: researchConsent,
         },
       });
-      if (error) {
+      if (apiErr) {
         const detail =
-          typeof error === 'object' && 'detail' in error ? String(error.detail) : 'Unknown error';
-        showError(detail.includes('taken') ? 'Username is already taken.' : detail);
+          typeof apiErr === 'object' && 'detail' in apiErr ? String(apiErr.detail) : 'Unknown error';
+        setError(detail.includes('taken') ? 'Username is already taken.' : detail);
         return;
       }
       await refreshProfile();
-      // AuthGuard redirects to / once profile is ready.
     } catch (e: unknown) {
-      showError(e instanceof Error ? e.message : 'Something went wrong.');
+      setError(e instanceof Error ? e.message : 'Something went wrong.');
     } finally {
       setLoading(false);
     }
   }
-
-  const inputBg = colors.background;
 
   return (
     <KeyboardAvoidingView
@@ -86,6 +85,7 @@ export default function CreateProfileScreen() {
         showsVerticalScrollIndicator={false}>
 
         <View style={styles.header}>
+          <ThemedText style={styles.logo}>VYRO</ThemedText>
           <ThemedText type="subtitle" style={styles.heading}>Set up your profile</ThemedText>
           <ThemedText themeColor="textSecondary" style={styles.sub}>
             This takes 30 seconds and you only do it once.
@@ -93,98 +93,69 @@ export default function CreateProfileScreen() {
         </View>
 
         <View style={styles.fields}>
-          <PaperInput
-            mode="outlined"
+          <Input
             label="Username"
+            leftIcon="at-outline"
             value={username}
             onChangeText={(t) => setUsername(t.toLowerCase())}
             autoCapitalize="none"
             autoCorrect={false}
             maxLength={32}
-            left={<PaperInput.Icon icon="at" />}
             placeholder="e.g. stefan.rares"
-            style={{ backgroundColor: inputBg }}
           />
-
-          <PaperInput
-            mode="outlined"
+          <Input
             label="Display name"
+            leftIcon="person-outline"
             value={displayName}
             onChangeText={setDisplayName}
             maxLength={64}
-            left={<PaperInput.Icon icon="account-outline" />}
             placeholder="How others see you"
-            style={{ backgroundColor: inputBg }}
           />
-
-          <PaperInput
-            mode="outlined"
+          <Input
             label="Timezone"
+            leftIcon="earth-outline"
             value={DETECTED_TIMEZONE}
             editable={false}
-            left={<PaperInput.Icon icon="earth" />}
-            style={{ backgroundColor: inputBg }}
           />
         </View>
 
         <View style={[styles.divider, { backgroundColor: colors.backgroundSelected }]} />
 
         <View style={styles.consents}>
-          <Pressable
-            style={styles.checkRow}
-            onPress={() => setConfirmsAdult((v) => !v)}>
-            <Checkbox
-              status={confirmsAdult ? 'checked' : 'unchecked'}
-              color={AccentColor}
-              onPress={() => setConfirmsAdult((v) => !v)}
-            />
-            <ThemedText type="small" style={styles.checkLabel}>
-              I confirm I am 18 years of age or older
-            </ThemedText>
-          </Pressable>
-
-          <Pressable
-            style={styles.checkRow}
-            onPress={() => setResearchConsent((v) => !v)}>
-            <Checkbox
-              status={researchConsent ? 'checked' : 'unchecked'}
-              color={AccentColor}
-              onPress={() => setResearchConsent((v) => !v)}
-            />
-            <ThemedText type="small" style={styles.checkLabel}>
-              I agree to participate in the anonymous pilot study{' '}
-              <ThemedText type="small" themeColor="textSecondary">(optional)</ThemedText>
-            </ThemedText>
-          </Pressable>
+          <Checkbox
+            checked={confirmsAdult}
+            onToggle={() => setConfirmsAdult((v) => !v)}
+            label={
+              <ThemedText type="small">
+                I confirm I am 18 years of age or older
+              </ThemedText>
+            }
+          />
+          <Checkbox
+            checked={researchConsent}
+            onToggle={() => setResearchConsent((v) => !v)}
+            label={
+              <ThemedText type="small">
+                I agree to participate in the anonymous pilot study{' '}
+                <ThemedText type="small" themeColor="textSecondary">(optional)</ThemedText>
+              </ThemedText>
+            }
+          />
         </View>
 
-        <Button
-          mode="contained"
-          onPress={handleCreate}
-          loading={loading}
-          disabled={loading}
-          style={styles.button}
-          contentStyle={styles.buttonContent}
-          labelStyle={styles.buttonLabel}
-          buttonColor={AccentColor}
-        >
-          {"Let's go"}
-        </Button>
+        {error ? (
+          <View style={styles.errorBanner}>
+            <ThemedText style={styles.errorText}>{error}</ThemedText>
+          </View>
+        ) : null}
+
+        <Button label="Let's go" onPress={handleCreate} loading={loading} disabled={loading} />
 
         <Pressable style={styles.signOutLink} onPress={signOut}>
           <ThemedText type="small" themeColor="textSecondary">Sign out</ThemedText>
         </Pressable>
 
       </ScrollView>
-
-      <Snackbar
-        visible={snackVisible}
-        onDismiss={() => setSnackVisible(false)}
-        duration={3500}
-        style={styles.snackbar}
-      >
-        {snackMsg}
-      </Snackbar>
     </KeyboardAvoidingView>
   );
 }
@@ -196,24 +167,30 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     paddingTop: Spacing.five,
     alignItems: 'center',
+    gap: Spacing.three,
   },
   header: {
     alignItems: 'center',
     gap: Spacing.one,
-    marginBottom: Spacing.four,
     width: '100%',
     maxWidth: 440,
+  },
+  logo: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: BrandColors.pink,
+    letterSpacing: 4,
+    marginBottom: Spacing.two,
   },
   heading: { textAlign: 'center' },
   sub: { textAlign: 'center' },
   fields: {
-    gap: Spacing.two,
+    gap: Spacing.three,
     width: '100%',
     maxWidth: 440,
   },
   divider: {
     height: 1,
-    marginVertical: Spacing.three,
     width: '100%',
     maxWidth: 440,
   },
@@ -221,25 +198,33 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     width: '100%',
     maxWidth: 440,
-    marginBottom: Spacing.three,
   },
   checkRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
+    alignItems: 'flex-start',
+    gap: Spacing.two,
   },
-  checkLabel: { flex: 1 },
-  button: {
-    borderRadius: 14,
+  checkBox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    marginTop: 1,
+  },
+  checkLabelWrap: { flex: 1 },
+  errorBanner: {
+    backgroundColor: '#EF444420',
+    borderRadius: 10,
+    padding: Spacing.two + 4,
     width: '100%',
     maxWidth: 440,
   },
-  buttonContent: { paddingVertical: 6 },
-  buttonLabel: { fontSize: 16, fontWeight: '600', letterSpacing: 0.3 },
+  errorText: { fontSize: 13, color: '#EF4444', textAlign: 'center', fontWeight: '500' },
   signOutLink: {
     alignItems: 'center',
-    marginTop: Spacing.three,
     paddingVertical: Spacing.two,
   },
-  snackbar: { marginBottom: Spacing.four },
 });

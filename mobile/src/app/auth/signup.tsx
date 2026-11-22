@@ -1,57 +1,37 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
-import { Button, Snackbar, TextInput as PaperInput } from 'react-native-paper';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 
 import { useAuth } from '@/contexts/auth';
-import { AccentColor, Spacing } from '@/constants/theme';
+import { BrandColors, Spacing } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function SignupScreen() {
   const { signUp } = useAuth();
   const colors = useTheme();
-  const [email, setEmail] = useState('');
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [snackMsg, setSnackMsg] = useState('');
-  const [snackVisible, setSnackVisible] = useState(false);
-
-  function showError(msg: string) {
-    setSnackMsg(msg);
-    setSnackVisible(true);
-  }
+  const [confirm, setConfirm]   = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState('');
 
   async function handleSignup() {
     if (!email.trim() || !password) return;
-    if (password !== confirm) {
-      showError('Passwords do not match.');
-      return;
-    }
-    if (password.length < 6) {
-      showError('Password must be at least 6 characters.');
-      return;
-    }
+    if (password !== confirm) { setError('Passwords do not match.'); return; }
+    if (password.length < 6)  { setError('Password must be at least 6 characters.'); return; }
+    setError('');
     setLoading(true);
     try {
       await signUp(email.trim(), password);
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Sign-up failed';
-      showError(friendlyError(message));
+      setError(friendlyError(e instanceof Error ? e.message : 'Sign-up failed'));
     } finally {
       setLoading(false);
     }
   }
-
-  const inputBg = colors.backgroundElement;
 
   return (
     <KeyboardAvoidingView
@@ -63,7 +43,7 @@ export default function SignupScreen() {
         showsVerticalScrollIndicator={false}>
 
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
-          <ThemedText style={[styles.logo, { color: AccentColor }]}>VYRO</ThemedText>
+          <ThemedText style={styles.logo}>VYRO</ThemedText>
 
           <View style={styles.headingGroup}>
             <ThemedText style={styles.heading}>Create account</ThemedText>
@@ -73,62 +53,48 @@ export default function SignupScreen() {
           </View>
 
           <View style={styles.fields}>
-            <PaperInput
-              mode="outlined"
+            <Input
               label="Email"
+              leftIcon="mail-outline"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
               textContentType="emailAddress"
-              left={<PaperInput.Icon icon="email-outline" />}
-              style={{ backgroundColor: inputBg }}
+              placeholder="you@example.com"
             />
-            <PaperInput
-              mode="outlined"
+            <Input
               label="Password"
+              leftIcon="lock-closed-outline"
+              isPassword
               value={password}
               onChangeText={setPassword}
-              secureTextEntry={!showPassword}
               autoComplete="new-password"
               textContentType="newPassword"
-              left={<PaperInput.Icon icon="lock-outline" />}
-              right={
-                <PaperInput.Icon
-                  icon={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                  onPress={() => setShowPassword((v) => !v)}
-                />
-              }
-              style={{ backgroundColor: inputBg }}
+              placeholder="••••••••"
             />
-            <PaperInput
-              mode="outlined"
+            <Input
               label="Confirm password"
+              leftIcon="shield-checkmark-outline"
+              isPassword
               value={confirm}
               onChangeText={setConfirm}
-              secureTextEntry={!showPassword}
               autoComplete="new-password"
               textContentType="newPassword"
               onSubmitEditing={handleSignup}
               returnKeyType="done"
-              left={<PaperInput.Icon icon="lock-check-outline" />}
-              style={{ backgroundColor: inputBg }}
+              placeholder="••••••••"
             />
           </View>
 
-          <Button
-            mode="contained"
-            onPress={handleSignup}
-            loading={loading}
-            disabled={loading}
-            style={styles.button}
-            contentStyle={styles.buttonContent}
-            labelStyle={styles.buttonLabel}
-            buttonColor={AccentColor}
-          >
-            Create account
-          </Button>
+          {error ? (
+            <View style={styles.errorBanner}>
+              <ThemedText style={styles.errorText}>{error}</ThemedText>
+            </View>
+          ) : null}
+
+          <Button label="Create account" onPress={handleSignup} loading={loading} disabled={loading} />
 
           <View style={styles.footer}>
             <ThemedText type="small" themeColor="textSecondary">Already have an account?{' '}</ThemedText>
@@ -139,15 +105,6 @@ export default function SignupScreen() {
         </View>
 
       </ScrollView>
-
-      <Snackbar
-        visible={snackVisible}
-        onDismiss={() => setSnackVisible(false)}
-        duration={3500}
-        style={styles.snackbar}
-      >
-        {snackMsg}
-      </Snackbar>
     </KeyboardAvoidingView>
   );
 }
@@ -170,38 +127,26 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 440,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: Spacing.four,
     gap: Spacing.three,
   },
   logo: {
     textAlign: 'center',
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: 2,
+    fontSize: 32,
+    fontWeight: '900',
+    color: BrandColors.pink,
+    letterSpacing: 4,
   },
-  headingGroup: {
-    gap: 4,
+  headingGroup: { gap: 4 },
+  heading: { fontSize: 22, fontWeight: '800', textAlign: 'center', letterSpacing: -0.4 },
+  sub: { textAlign: 'center', fontSize: 14 },
+  fields: { gap: Spacing.three },
+  errorBanner: {
+    backgroundColor: '#EF444420',
+    borderRadius: 10,
+    padding: Spacing.two + 4,
   },
-  heading: {
-    fontSize: 20,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  sub: {
-    textAlign: 'center',
-    fontSize: 14,
-  },
-  fields: { gap: Spacing.two },
-  button: {
-    borderRadius: 14,
-    marginTop: Spacing.one,
-  },
-  buttonContent: { paddingVertical: 6 },
-  buttonLabel: { fontSize: 16, fontWeight: '600' },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  snackbar: { marginBottom: Spacing.four },
+  errorText: { fontSize: 13, color: '#EF4444', textAlign: 'center', fontWeight: '500' },
+  footer: { flexDirection: 'row', justifyContent: 'center' },
 });

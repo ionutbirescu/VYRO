@@ -9,10 +9,10 @@ import { logEvent } from '@/api/events';
 import type { Schemas } from '@/api/client';
 import { ChallengeCard } from '@/components/challenge-card';
 import { ThemedText } from '@/components/themed-text';
-import { BottomTabInset, MaxContentWidth, Spacing, StreakColor } from '@/constants/theme';
+import { BrandColors, BottomTabInset, MaxContentWidth, Spacing, StreakColor } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
 
-const HEADER_GREEN = '#1a3d2b';
+const HEADER_BG = BrandColors.headerBg;
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -55,9 +55,9 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.root}>
-      {/* Decorative circles */}
-      <View style={[styles.dec, { width: 240, height: 240, top: -80, right: -60 }]} pointerEvents="none" />
-      <View style={[styles.dec, { width: 120, height: 120, top: 20, right: 50 }]} pointerEvents="none" />
+      {/* Decorative glows */}
+      <View style={[styles.dec, styles.decPink, { width: 260, height: 260, top: -90, right: -70 }]} pointerEvents="none" />
+      <View style={[styles.dec, styles.decCyan, { width: 130, height: 130, top: 10, right: 40 }]} pointerEvents="none" />
 
       <SafeAreaView edges={['top', 'left', 'right']} style={styles.headerArea}>
         <View style={styles.header}>
@@ -167,9 +167,11 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: HEADER_GREEN },
-  dec: { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)' },
-  headerArea: { backgroundColor: HEADER_GREEN },
+  root: { flex: 1, backgroundColor: HEADER_BG },
+  dec: { position: 'absolute', borderRadius: 999 },
+  decPink: { backgroundColor: 'rgba(255,45,120,0.14)' },
+  decCyan: { backgroundColor: 'rgba(0,217,200,0.10)' },
+  headerArea: { backgroundColor: HEADER_BG },
   header: {
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.two,
@@ -207,7 +209,7 @@ const styles = StyleSheet.create({
   },
   sheet: {
     flex: 1,
-    backgroundColor: '#F4F4F8',
+    backgroundColor: '#F7F0FF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     overflow: 'hidden',
@@ -226,7 +228,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1C1C1E',
+    color: '#1A0A2E',
     letterSpacing: -0.3,
   },
   horizontalList: {

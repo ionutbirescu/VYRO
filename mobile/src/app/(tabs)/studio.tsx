@@ -16,11 +16,11 @@ import { api } from '@/api/client';
 import { logEvent } from '@/api/events';
 import type { Schemas } from '@/api/client';
 import { ThemedText } from '@/components/themed-text';
-import { AccentColor, BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { AccentColor, BrandColors, BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
 import { useTheme } from '@/hooks/use-theme';
 
-const HEADER_GREEN = '#1a3d2b';
+const HEADER_BG = BrandColors.headerBg;
 
 type StudioCategoryKey = 'fitness' | 'nutrition' | 'mindfulness' | 'sleep' | 'learning' | 'reading' | 'creativity' | 'productivity' | 'social' | 'outdoors' | 'sustainability' | 'finance' | 'digital_detox' | undefined;
 
@@ -118,9 +118,9 @@ export default function StudioScreen() {
 
   return (
     <View style={styles.root}>
-      {/* Decorative circles */}
-      <View style={[styles.dec, { width: 200, height: 200, top: -60, right: -50 }]} pointerEvents="none" />
-      <View style={[styles.dec, { width: 80, height: 80, top: 10, right: 60 }]} pointerEvents="none" />
+      {/* Decorative glows */}
+      <View style={[styles.dec, styles.decPurple, { width: 220, height: 220, top: -70, right: -55 }]} pointerEvents="none" />
+      <View style={[styles.dec, styles.decPink, { width: 90, height: 90, top: 10, right: 55 }]} pointerEvents="none" />
 
       <SafeAreaView edges={['top', 'left', 'right']} style={styles.headerArea}>
         <View style={styles.header}>
@@ -197,7 +197,7 @@ export default function StudioScreen() {
                   return (
                     <Pressable
                       key={d}
-                      style={[styles.durationBtn, { backgroundColor: active ? HEADER_GREEN : colors.backgroundElement }]}
+                      style={[styles.durationBtn, { backgroundColor: active ? AccentColor : colors.backgroundElement }]}
                       onPress={() => setDuration(d)}>
                       <ThemedText type="smallBold" style={{ color: active ? '#fff' : colors.text }}>
                         {d === 1 ? '1 day' : `${d}d`}
@@ -292,7 +292,7 @@ export default function StudioScreen() {
               </View>
 
               <Pressable
-                style={[styles.generateBtn, { backgroundColor: HEADER_GREEN, opacity: publishing ? 0.5 : 1 }]}
+                style={[styles.generateBtn, { backgroundColor: AccentColor, opacity: publishing ? 0.5 : 1 }]}
                 onPress={handlePublish}
                 disabled={publishing}>
                 {publishing
@@ -329,9 +329,11 @@ function Label({ children }: { children: string }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: HEADER_GREEN },
-  dec: { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)' },
-  headerArea: { backgroundColor: HEADER_GREEN },
+  root: { flex: 1, backgroundColor: HEADER_BG },
+  dec: { position: 'absolute', borderRadius: 999 },
+  decPink: { backgroundColor: 'rgba(255,45,120,0.14)' },
+  decPurple: { backgroundColor: 'rgba(191,95,255,0.12)' },
+  headerArea: { backgroundColor: HEADER_BG },
   header: {
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.two,
@@ -355,7 +357,7 @@ const styles = StyleSheet.create({
   unlimitedLabel: { fontSize: 12, color: 'rgba(255,255,255,0.65)' },
   sheet: {
     flex: 1,
-    backgroundColor: '#F4F4F8',
+    backgroundColor: '#F7F0FF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     overflow: 'hidden',

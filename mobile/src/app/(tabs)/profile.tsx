@@ -5,12 +5,12 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { AccentColor, BottomTabInset, MaxContentWidth, Spacing, StreakColor } from '@/constants/theme';
+import { AccentColor, BrandColors, BottomTabInset, MaxContentWidth, Spacing, StreakColor } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
 import { type ThemePreference, useThemePreference } from '@/contexts/theme-preference';
 import { useTheme } from '@/hooks/use-theme';
 
-const HEADER_GREEN = '#1a3d2b';
+const HEADER_BG = BrandColors.headerBg;
 
 const THEME_OPTIONS: { value: ThemePreference; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { value: 'light', label: 'Light', icon: 'sunny-outline' },
@@ -30,9 +30,9 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.root}>
-      {/* Decorative circles */}
-      <View style={[styles.dec, { width: 220, height: 220, top: -60, right: -60 }]} pointerEvents="none" />
-      <View style={[styles.dec, { width: 100, height: 100, top: 30, right: 60 }]} pointerEvents="none" />
+      {/* Decorative glows */}
+      <View style={[styles.dec, styles.decPink, { width: 240, height: 240, top: -70, right: -65 }]} pointerEvents="none" />
+      <View style={[styles.dec, styles.decCyan, { width: 110, height: 110, top: 25, right: 55 }]} pointerEvents="none" />
 
       <SafeAreaView edges={['top', 'left', 'right']} style={styles.headerArea}>
         <View style={styles.header}>
@@ -178,9 +178,11 @@ function StatCard({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: HEADER_GREEN },
-  dec: { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)' },
-  headerArea: { backgroundColor: HEADER_GREEN },
+  root: { flex: 1, backgroundColor: HEADER_BG },
+  dec: { position: 'absolute', borderRadius: 999 },
+  decPink: { backgroundColor: 'rgba(255,45,120,0.15)' },
+  decCyan: { backgroundColor: 'rgba(0,217,200,0.10)' },
+  headerArea: { backgroundColor: HEADER_BG },
   header: {
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.two,
@@ -200,7 +202,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: HEADER_GREEN,
+    backgroundColor: HEADER_BG,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -210,7 +212,7 @@ const styles = StyleSheet.create({
   bio: { fontSize: 13, color: 'rgba(255,255,255,0.6)', textAlign: 'center', paddingHorizontal: Spacing.four },
   sheet: {
     flex: 1,
-    backgroundColor: '#F4F4F8',
+    backgroundColor: '#F7F0FF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     overflow: 'hidden',

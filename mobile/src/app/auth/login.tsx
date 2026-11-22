@@ -1,48 +1,34 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
-import { Button, Snackbar, TextInput as PaperInput } from 'react-native-paper';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 
 import { useAuth } from '@/contexts/auth';
-import { AccentColor, Spacing } from '@/constants/theme';
+import { BrandColors, Spacing } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
   const colors = useTheme();
-  const [email, setEmail] = useState('');
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [snackMsg, setSnackMsg] = useState('');
-  const [snackVisible, setSnackVisible] = useState(false);
-
-  function showError(msg: string) {
-    setSnackMsg(msg);
-    setSnackVisible(true);
-  }
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState('');
 
   async function handleLogin() {
     if (!email.trim() || !password) return;
+    setError('');
     setLoading(true);
     try {
       await signIn(email.trim(), password);
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Sign-in failed';
-      showError(friendlyError(message));
+      setError(friendlyError(e instanceof Error ? e.message : 'Sign-in failed'));
     } finally {
       setLoading(false);
     }
   }
-
-  const inputBg = colors.backgroundElement;
 
   return (
     <KeyboardAvoidingView
@@ -54,7 +40,7 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}>
 
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
-          <ThemedText style={[styles.logo, { color: AccentColor }]}>VYRO</ThemedText>
+          <ThemedText style={styles.logo}>VYRO</ThemedText>
 
           <View style={styles.headingGroup}>
             <ThemedText style={styles.heading}>Welcome back</ThemedText>
@@ -64,51 +50,38 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.fields}>
-            <PaperInput
-              mode="outlined"
+            <Input
               label="Email"
+              leftIcon="mail-outline"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
               textContentType="emailAddress"
-              left={<PaperInput.Icon icon="email-outline" />}
-              style={{ backgroundColor: inputBg }}
+              placeholder="you@example.com"
             />
-            <PaperInput
-              mode="outlined"
+            <Input
               label="Password"
+              leftIcon="lock-closed-outline"
+              isPassword
               value={password}
               onChangeText={setPassword}
-              secureTextEntry={!showPassword}
               autoComplete="password"
               textContentType="password"
               onSubmitEditing={handleLogin}
               returnKeyType="done"
-              left={<PaperInput.Icon icon="lock-outline" />}
-              right={
-                <PaperInput.Icon
-                  icon={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                  onPress={() => setShowPassword((v) => !v)}
-                />
-              }
-              style={{ backgroundColor: inputBg }}
+              placeholder="••••••••"
             />
           </View>
 
-          <Button
-            mode="contained"
-            onPress={handleLogin}
-            loading={loading}
-            disabled={loading}
-            style={styles.button}
-            contentStyle={styles.buttonContent}
-            labelStyle={styles.buttonLabel}
-            buttonColor={AccentColor}
-          >
-            Sign in
-          </Button>
+          {error ? (
+            <View style={styles.errorBanner}>
+              <ThemedText style={styles.errorText}>{error}</ThemedText>
+            </View>
+          ) : null}
+
+          <Button label="Sign in" onPress={handleLogin} loading={loading} disabled={loading} />
 
           <View style={styles.footer}>
             <ThemedText type="small" themeColor="textSecondary">Don&apos;t have an account?{' '}</ThemedText>
@@ -119,15 +92,6 @@ export default function LoginScreen() {
         </View>
 
       </ScrollView>
-
-      <Snackbar
-        visible={snackVisible}
-        onDismiss={() => setSnackVisible(false)}
-        duration={3500}
-        style={styles.snackbar}
-      >
-        {snackMsg}
-      </Snackbar>
     </KeyboardAvoidingView>
   );
 }
@@ -151,38 +115,26 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 440,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: Spacing.four,
     gap: Spacing.three,
   },
   logo: {
     textAlign: 'center',
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: 2,
+    fontSize: 32,
+    fontWeight: '900',
+    color: BrandColors.pink,
+    letterSpacing: 4,
   },
-  headingGroup: {
-    gap: 4,
+  headingGroup: { gap: 4 },
+  heading: { fontSize: 22, fontWeight: '800', textAlign: 'center', letterSpacing: -0.4 },
+  sub: { textAlign: 'center', fontSize: 14 },
+  fields: { gap: Spacing.three },
+  errorBanner: {
+    backgroundColor: '#EF444420',
+    borderRadius: 10,
+    padding: Spacing.two + 4,
   },
-  heading: {
-    fontSize: 20,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  sub: {
-    textAlign: 'center',
-    fontSize: 14,
-  },
-  fields: { gap: Spacing.two },
-  button: {
-    borderRadius: 14,
-    marginTop: Spacing.one,
-  },
-  buttonContent: { paddingVertical: 6 },
-  buttonLabel: { fontSize: 16, fontWeight: '600' },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  snackbar: { marginBottom: Spacing.four },
+  errorText: { fontSize: 13, color: '#EF4444', textAlign: 'center', fontWeight: '500' },
+  footer: { flexDirection: 'row', justifyContent: 'center' },
 });

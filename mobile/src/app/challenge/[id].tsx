@@ -9,7 +9,7 @@ import type { Schemas } from '@/api/client';
 import { ActivityCard } from '@/components/activity-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { AccentColor, BrandColors, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // How many recent proofs the challenge screen shows; "See all" opens the rest.
@@ -101,7 +101,7 @@ export default function ChallengeScreen() {
   if (loading) {
     return (
       <ThemedView style={styles.centered}>
-        <ActivityIndicator />
+        <ActivityIndicator color={AccentColor} />
       </ThemedView>
     );
   }
@@ -186,12 +186,19 @@ export default function ChallengeScreen() {
           <Pressable
             style={[
               styles.actionBtn,
-              { backgroundColor: isActive ? 'transparent' : colors.text, borderColor: colors.text, borderWidth: isActive ? 1 : 0 },
+              isActive
+                ? { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: colors.backgroundSelected }
+                : { backgroundColor: AccentColor, borderWidth: 0 },
             ]}
             onPress={isActive ? handleLeave : handleJoin}
             disabled={joining}>
             <ThemedText
-              style={{ color: isActive ? colors.text : colors.background, fontWeight: '600' }}>
+              style={{
+                color: isActive ? colors.textSecondary : '#fff',
+                fontWeight: '700',
+                fontSize: 15,
+                letterSpacing: -0.2,
+              }}>
               {joining ? '…' : isActive ? 'Leave challenge' : 'Join challenge'}
             </ThemedText>
           </Pressable>

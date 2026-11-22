@@ -6,11 +6,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '@/api/client';
 import type { Schemas } from '@/api/client';
 import { ThemedText } from '@/components/themed-text';
-import { AccentColor, BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { AccentColor, BrandColors, BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
 import { useTheme } from '@/hooks/use-theme';
 
-const HEADER_GREEN = '#1a3d2b';
+const HEADER_BG = BrandColors.headerBg;
 
 const PLUS_FEATURES: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
   { icon: 'sparkles-outline', text: 'Unlimited AI challenge generation' },
@@ -88,8 +88,9 @@ export default function ShopScreen() {
 
   return (
     <View style={styles.root}>
-      {/* Decorative circles */}
-      <View style={[styles.dec, { width: 200, height: 200, top: -60, right: -50 }]} pointerEvents="none" />
+      {/* Decorative glows */}
+      <View style={[styles.dec, styles.decWarm, { width: 220, height: 220, top: -70, right: -55 }]} pointerEvents="none" />
+      <View style={[styles.dec, styles.decPink, { width: 90, height: 90, top: 20, right: 55 }]} pointerEvents="none" />
 
       <SafeAreaView edges={['top', 'left', 'right']} style={styles.headerArea}>
         <View style={styles.header}>
@@ -234,9 +235,11 @@ export default function ShopScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: HEADER_GREEN },
-  dec: { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)' },
-  headerArea: { backgroundColor: HEADER_GREEN },
+  root: { flex: 1, backgroundColor: HEADER_BG },
+  dec: { position: 'absolute', borderRadius: 999 },
+  decPink: { backgroundColor: 'rgba(255,45,120,0.14)' },
+  decWarm: { backgroundColor: 'rgba(255,107,0,0.12)' },
+  headerArea: { backgroundColor: HEADER_BG },
   header: {
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.two,
@@ -247,7 +250,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 13, color: 'rgba(255,255,255,0.65)' },
   sheet: {
     flex: 1,
-    backgroundColor: '#F4F4F8',
+    backgroundColor: '#F7F0FF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     overflow: 'hidden',

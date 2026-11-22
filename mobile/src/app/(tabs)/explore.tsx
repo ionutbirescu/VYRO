@@ -19,10 +19,10 @@ import { ChallengeCard } from '@/components/challenge-card';
 import { Segmented } from '@/components/segmented';
 import { UserRow } from '@/components/user-row';
 import { ThemedText } from '@/components/themed-text';
-import { AccentColor, BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { AccentColor, BrandColors, BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-const HEADER_GREEN = '#1a3d2b';
+const HEADER_BG = BrandColors.headerBg;
 
 type CategoryKey = 'fitness' | 'nutrition' | 'mindfulness' | 'sleep' | 'learning' | 'reading' | 'creativity' | 'productivity' | 'social' | 'outdoors' | 'sustainability' | 'finance' | 'digital_detox' | undefined;
 
@@ -122,8 +122,9 @@ export default function ExploreScreen() {
 
   return (
     <View style={styles.root}>
-      {/* Decorative circles */}
-      <View style={[styles.dec, { width: 200, height: 200, top: -60, right: -50 }]} pointerEvents="none" />
+      {/* Decorative glows */}
+      <View style={[styles.dec, styles.decCyan, { width: 220, height: 220, top: -70, right: -55 }]} pointerEvents="none" />
+      <View style={[styles.dec, styles.decPink, { width: 100, height: 100, top: 30, right: 20 }]} pointerEvents="none" />
 
       <SafeAreaView edges={['top', 'left', 'right']} style={styles.headerArea}>
         <View style={styles.header}>
@@ -228,9 +229,11 @@ export default function ExploreScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: HEADER_GREEN },
-  dec: { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.05)' },
-  headerArea: { backgroundColor: HEADER_GREEN },
+  root: { flex: 1, backgroundColor: HEADER_BG },
+  dec: { position: 'absolute', borderRadius: 999 },
+  decPink: { backgroundColor: 'rgba(255,45,120,0.14)' },
+  decCyan: { backgroundColor: 'rgba(0,217,200,0.10)' },
+  headerArea: { backgroundColor: HEADER_BG },
   header: {
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.two,
@@ -254,7 +257,7 @@ const styles = StyleSheet.create({
   } as object,
   sheet: {
     flex: 1,
-    backgroundColor: '#F4F4F8',
+    backgroundColor: '#F7F0FF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     overflow: 'hidden',
