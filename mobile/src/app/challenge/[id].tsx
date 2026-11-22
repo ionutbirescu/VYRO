@@ -9,7 +9,7 @@ import type { Schemas } from '@/api/client';
 import { ActivityCard } from '@/components/activity-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { AccentColor, BrandColors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { AccentColor, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // How many recent proofs the challenge screen shows; "See all" opens the rest.
