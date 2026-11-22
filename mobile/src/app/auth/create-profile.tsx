@@ -1,10 +1,10 @@
-﻿import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { api } from '@/api/client';
 import { useAuth } from '@/contexts/auth';
-import { AccentColor, BrandColors, InterFonts, Spacing } from '@/constants/theme';
+import { AccentColor, BrandColors, Spacing } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

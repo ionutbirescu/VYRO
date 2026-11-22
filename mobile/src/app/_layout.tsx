@@ -5,8 +5,7 @@ import {
   SpaceGrotesk_700Bold,
   useFonts,
 } from '@expo-google-fonts/space-grotesk';
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 
 import { logEvent } from '@/api/events';
@@ -31,7 +30,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     } else if (state.status === 'ready' && inAuthGroup) {
       router.replace('/');
     }
-  }, [state.status, segments]);
+  }, [state.status, segments, router]);
 
   if (state.status === 'loading') return null;
 
