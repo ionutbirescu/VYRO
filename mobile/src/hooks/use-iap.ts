@@ -1,6 +1,15 @@
-import * as InAppPurchases from 'expo-in-app-purchases';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Platform } from 'react-native';
+import {
+  clearTransactionIOS,
+  finishTransaction,
+  getProducts,
+  initConnection,
+  purchaseErrorListener,
+  purchaseUpdatedListener,
+  requestPurchase,
+  restorePurchases,
+} from 'react-native-iap';
 
 import { api } from '@/api/client';
 
@@ -25,8 +34,8 @@ export type IAPProduct = {
   title: string;
   description: string;
   price: string;
-  priceAmountMicros?: number;
-  priceCurrencyCode?: string;
+  localizedPrice?: string;
+  currency?: string;
 };
 
 type IAPState = {
@@ -43,7 +52,6 @@ export function useIAP(onPurchaseSuccess: (productId: string) => void) {
     loading: isIOS,
     purchasing: null,
   });
-  const connected = useRef(false);
   const onPurchaseSuccessRef = useRef(onPurchaseSuccess);
 
   useEffect(() => {
@@ -53,60 +61,60 @@ export function useIAP(onPurchaseSuccess: (productId: string) => void) {
   useEffect(() => {
     if (!isIOS) return;
 
+    let purchaseUpdateSub: ReturnType<typeof purchaseUpdatedListener> | null = null;
+    let purchaseErrorSub: ReturnType<typeof purchaseErrorListener> | null = null;
+
     async function init() {
       try {
-        await InAppPurchases.connectAsync();
-        connected.current = true;
+        await initConnection();
+        await clearTransactionIOS();
 
-        const { responseCode, results } = await InAppPurchases.getProductsAsync(ALL_PRODUCT_IDS);
-        if (responseCode === InAppPurchases.IAPResponseCode.OK && results) {
-          setState((s) => ({ ...s, products: results as IAPProduct[], loading: false }));
-        } else {
-          setState((s) => ({ ...s, loading: false }));
-        }
+        const items = await getProducts({ skus: ALL_PRODUCT_IDS });
+        setState((s) => ({ ...s, products: items as IAPProduct[], loading: false }));
       } catch {
         setState((s) => ({ ...s, loading: false }));
       }
-    }
 
-    InAppPurchases.setPurchaseListener(async ({ responseCode, results, errorCode }) => {
-      if (responseCode === InAppPurchases.IAPResponseCode.OK && results) {
-        for (const purchase of results) {
-          if (!purchase.acknowledged) {
-            try {
-              const internalCode = APPLE_TO_INTERNAL[purchase.productId];
-              if (!internalCode) throw new Error(`Unknown product: ${purchase.productId}`);
-              await api.POST('/v1/shop/iap/validate', {
-                body: {
-                  product_code: internalCode,
-                  receipt: purchase.transactionReceipt ?? '',
-                  platform: 'ios',
-                },
-              });
-              await InAppPurchases.finishTransactionAsync(purchase, true);
-              onPurchaseSuccessRef.current(purchase.productId);
-            } catch {
-              Alert.alert('Purchase error', 'Could not validate purchase. Contact support.');
-            }
-          }
+      purchaseUpdateSub = purchaseUpdatedListener(async (purchase) => {
+        const receipt = purchase.transactionReceipt;
+        if (!receipt) return;
+
+        const internalCode = APPLE_TO_INTERNAL[purchase.productId];
+        if (!internalCode) {
+          await finishTransaction({ purchase, isConsumable: false });
+          return;
         }
-      } else if (responseCode === InAppPurchases.IAPResponseCode.DEFERRED) {
-        Alert.alert('Purchase pending', 'Your purchase is awaiting approval (Ask to Buy).');
-      } else if (responseCode !== InAppPurchases.IAPResponseCode.USER_CANCELED) {
-        if (errorCode !== undefined) {
+
+        try {
+          await api.POST('/v1/shop/iap/validate', {
+            body: {
+              product_code: internalCode,
+              receipt,
+              platform: 'ios',
+            },
+          });
+          await finishTransaction({ purchase, isConsumable: false });
+          onPurchaseSuccessRef.current(purchase.productId);
+        } catch {
+          Alert.alert('Purchase error', 'Could not validate purchase. Contact support.');
+        }
+
+        setState((s) => ({ ...s, purchasing: null }));
+      });
+
+      purchaseErrorSub = purchaseErrorListener((error) => {
+        if (error.code !== 'E_USER_CANCELLED') {
           Alert.alert('Purchase failed', 'Something went wrong. Please try again.');
         }
-      }
-      setState((s) => ({ ...s, purchasing: null }));
-    });
+        setState((s) => ({ ...s, purchasing: null }));
+      });
+    }
 
     init();
 
     return () => {
-      if (connected.current) {
-        InAppPurchases.disconnectAsync().catch(() => {});
-        connected.current = false;
-      }
+      purchaseUpdateSub?.remove();
+      purchaseErrorSub?.remove();
     };
   }, []);
 
@@ -117,18 +125,18 @@ export function useIAP(onPurchaseSuccess: (productId: string) => void) {
     }
     setState((s) => ({ ...s, purchasing: productId }));
     try {
-      await InAppPurchases.purchaseItemAsync(productId);
+      await requestPurchase({ sku: productId, andDangerouslyFinishTransactionAutomaticallyIOS: false });
     } catch {
       setState((s) => ({ ...s, purchasing: null }));
       Alert.alert('Purchase failed', 'Could not start purchase. Please try again.');
     }
   }, []);
 
-  const restorePurchases = useCallback(async () => {
+  const restore = useCallback(async () => {
     if (!isIOS) return;
     setState((s) => ({ ...s, purchasing: 'restore' }));
     try {
-      await InAppPurchases.getPurchaseHistoryAsync();
+      await restorePurchases();
     } catch {
       Alert.alert('Restore failed', 'Could not restore purchases. Please try again.');
     } finally {
@@ -136,5 +144,5 @@ export function useIAP(onPurchaseSuccess: (productId: string) => void) {
     }
   }, []);
 
-  return { ...state, purchase, restorePurchases };
+  return { ...state, purchase, restorePurchases: restore };
 }
