@@ -47,7 +47,8 @@
           "cameraPermission": "VYRO needs camera access to let you submit proof photos.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-in-app-purchases"
     ],
     "experiments": {
       "typedRoutes": true,

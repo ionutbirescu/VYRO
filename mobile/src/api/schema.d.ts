@@ -736,6 +736,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shop/iap/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate Iap
+         * @description Validate an Apple receipt and grant the purchased product.
+         */
+        post: operations["validate_iap"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/entitlements": {
         parameters: {
             query?: never;
@@ -1286,6 +1306,30 @@ export interface components {
             status: "ok";
             /** Version */
             version: string;
+        };
+        /** IAPValidateRequest */
+        IAPValidateRequest: {
+            /**
+             * Product Code
+             * @description Internal product code, e.g. plus_monthly
+             */
+            product_code: string;
+            /**
+             * Receipt
+             * @description Base64-encoded Apple receipt from StoreKit
+             */
+            receipt: string;
+            /**
+             * Platform
+             * @constant
+             */
+            platform: "ios";
+        };
+        /** IAPValidateResult */
+        IAPValidateResult: {
+            /** Product Code */
+            product_code: string;
+            entitlements: components["schemas"]["Entitlements"];
         };
         /**
          * InterventionKind
@@ -4133,6 +4177,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckoutResult"];
+                };
+            };
+            /** @description Missing, invalid or expired bearer token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `registration_required`: signed in but no profile yet; call POST /v1/me */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    validate_iap: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IAPValidateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IAPValidateResult"];
                 };
             };
             /** @description Missing, invalid or expired bearer token */
