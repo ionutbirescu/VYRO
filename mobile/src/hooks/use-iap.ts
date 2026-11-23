@@ -45,7 +45,10 @@ export function useIAP(onPurchaseSuccess: (productId: string) => void) {
   });
   const connected = useRef(false);
   const onPurchaseSuccessRef = useRef(onPurchaseSuccess);
-  onPurchaseSuccessRef.current = onPurchaseSuccess;
+
+  useEffect(() => {
+    onPurchaseSuccessRef.current = onPurchaseSuccess;
+  }, [onPurchaseSuccess]);
 
   useEffect(() => {
     if (!isIOS) return;
