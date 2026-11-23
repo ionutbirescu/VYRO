@@ -49,6 +49,14 @@ export default function SubmitProofScreen() {
   const [disputeReason, setDisputeReason] = useState('');
 
   async function pickImage(useCamera: boolean) {
+    if (useCamera) {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Camera access needed', 'Go to Settings and allow VYRO to use your camera.');
+        return;
+      }
+    }
+
     const fn = useCamera
       ? ImagePicker.launchCameraAsync
       : ImagePicker.launchImageLibraryAsync;
