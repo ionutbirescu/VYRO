@@ -48,3 +48,14 @@ class CheckoutResult(Schema):
     currency: Currency
     sandbox: Literal[True] = Field(default=True, description="Always true; no money moves")
     entitlements: Entitlements
+
+
+class IAPValidateRequest(Schema):
+    product_code: str = Field(description="Internal product code, e.g. plus_monthly")
+    receipt: str = Field(description="Base64-encoded Apple receipt from StoreKit")
+    platform: Literal["ios"]
+
+
+class IAPValidateResult(Schema):
+    product_code: str
+    entitlements: Entitlements

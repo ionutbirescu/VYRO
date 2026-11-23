@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+import httpx
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
@@ -12,6 +13,8 @@ from app.schemas.shop import (
     CheckoutRequest,
     CheckoutResult,
     Entitlements,
+    IAPValidateRequest,
+    IAPValidateResult,
     OwnedCosmetic,
     Product,
     ProductList,
@@ -179,7 +182,95 @@ def checkout(body: CheckoutRequest, user: CurrentUser, db: DbSession) -> Checkou
     )
 
 
-@router.get("/me/entitlements")
+APPLE_RECEIPT_URL_PROD = "https://buy.itunes.apple.com/verifyReceipt"
+APPLE_RECEIPT_URL_SANDBOX = "https://sandbox.itunes.apple.com/verifyReceipt"
+
+# Maps Apple product ID → internal product code
+APPLE_PRODUCT_MAP: dict[str, str] = {
+    "com.ionutbirescu.vyro.plus_monthly": "plus_monthly",
+    "com.ionutbirescu.vyro.gold_frame": "cosmetic_frame_gold",
+    "com.ionutbirescu.vyro.night_theme": "cosmetic_theme_night",
+    "com.ionutbirescu.vyro.challenge_pack_30": "challenge_pack_30",
+}
+
+
+def _verify_apple_receipt(receipt: str) -> str | None:
+    """Verify receipt with Apple and return the product_id of the latest purchase, or None."""
+    payload = {"receipt-data": receipt, "exclude-old-transactions": True}
+    with httpx.Client(timeout=10) as client:
+        resp = client.post(APPLE_RECEIPT_URL_PROD, json=payload)
+        data = resp.json()
+        # Status 21007 means receipt is from sandbox — retry against sandbox
+        if data.get("status") == 21007:
+            resp = client.post(APPLE_RECEIPT_URL_SANDBOX, json=payload)
+            data = resp.json()
+        if data.get("status") != 0:
+            return None
+        latest = data.get("latest_receipt_info") or data.get("receipt", {}).get("in_app", [])
+        if not latest:
+            return None
+        # Pick the most recent transaction
+        most_recent = max(latest, key=lambda t: int(t.get("purchase_date_ms", "0")))
+        return most_recent.get("product_id")
+
+
+def _grant_product(db: DbSession, user: User, product_code: str, defn: _Def, now: datetime) -> None:
+    """Grant a product to a user (idempotent)."""
+    purchase = Purchase(
+        user_id=user.id,
+        product_code=product_code,
+        price_cents=_price(defn, user.price_variant),
+        currency=CURRENCY,
+        price_variant=user.price_variant,
+        sandbox=False,
+    )
+    db.add(purchase)
+    if defn.kind is ProductKind.SUBSCRIPTION:
+        base = user.plus_until if user.plus_until and user.plus_until > now else now
+        user.plus_until = base + PLUS_DURATION
+    elif defn.kind is ProductKind.COSMETIC:
+        already = db.scalar(
+            select(UserCosmetic).where(
+                UserCosmetic.user_id == user.id,
+                UserCosmetic.cosmetic_code == product_code,
+            )
+        )
+        if not already:
+            db.add(
+                UserCosmetic(
+                    user_id=user.id,
+                    cosmetic_code=product_code,
+                    acquired_via=AcquiredVia.PURCHASED,
+                    equipped=False,
+                )
+            )
+
+
+@router.post("/shop/iap/validate", status_code=status.HTTP_201_CREATED)
+def validate_iap(body: IAPValidateRequest, user: CurrentUser, db: DbSession) -> IAPValidateResult:
+    """Validate an Apple receipt and grant the purchased product."""
+    defn = CATALOG.get(body.product_code)
+    if defn is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Product not found")
+
+    apple_product_id = next(
+        (k for k, v in APPLE_PRODUCT_MAP.items() if v == body.product_code), None
+    )
+    if apple_product_id is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Product not mapped to Apple ID")
+
+    verified_product_id = _verify_apple_receipt(body.receipt)
+    if verified_product_id != apple_product_id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Receipt verification failed")
+
+    now = datetime.now(UTC)
+    _grant_product(db, user, body.product_code, defn, now)
+    db.commit()
+
+    return IAPValidateResult(
+        product_code=body.product_code,
+        entitlements=_entitlements(db, user, datetime.now(UTC)),
+    )
 def get_entitlements(user: CurrentUser, db: DbSession) -> Entitlements:
     return _entitlements(db, user, datetime.now(UTC))
 

@@ -13,6 +13,14 @@ export const IAP_PRODUCT_IDS = {
 
 const ALL_PRODUCT_IDS = Object.values(IAP_PRODUCT_IDS);
 
+// Maps Apple product ID → internal backend product code
+const APPLE_TO_INTERNAL: Record<string, string> = {
+  'com.ionutbirescu.vyro.plus_monthly': 'plus_monthly',
+  'com.ionutbirescu.vyro.gold_frame': 'cosmetic_frame_gold',
+  'com.ionutbirescu.vyro.night_theme': 'cosmetic_theme_night',
+  'com.ionutbirescu.vyro.challenge_pack_30': 'challenge_pack_30',
+};
+
 export type IAPProduct = {
   productId: string;
   title: string;
@@ -63,10 +71,12 @@ export function useIAP(onPurchaseSuccess: (productId: string) => void) {
         for (const purchase of results) {
           if (!purchase.acknowledged) {
             try {
-              // Validate receipt with our backend
-              await api.POST('/v1/shop/iap/validate', {
+              const internalCode = APPLE_TO_INTERNAL[purchase.productId];
+              if (!internalCode) throw new Error(`Unknown product: ${purchase.productId}`);
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await (api.POST as any)('/v1/shop/iap/validate', {
                 body: {
-                  product_code: purchase.productId,
+                  product_code: internalCode,
                   receipt: purchase.transactionReceipt ?? '',
                   platform: 'ios',
                 },
