@@ -271,6 +271,9 @@ def validate_iap(body: IAPValidateRequest, user: CurrentUser, db: DbSession) -> 
         product_code=body.product_code,
         entitlements=_entitlements(db, user, datetime.now(UTC)),
     )
+
+
+@router.get("/me/entitlements")
 def get_entitlements(user: CurrentUser, db: DbSession) -> Entitlements:
     return _entitlements(db, user, datetime.now(UTC))
 
