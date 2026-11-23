@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 
 import { useAuth } from '@/contexts/auth';
-import { BrandColors, Spacing } from '@/constants/theme';
+import { BrandColors, InterFonts, Spacing } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -133,10 +133,12 @@ const styles = StyleSheet.create({
   },
   logo: {
     textAlign: 'center',
+    fontFamily: InterFonts.bold,
     fontSize: 32,
-    fontWeight: '900',
+    lineHeight: 44,
     color: BrandColors.pink,
     letterSpacing: 4,
+    paddingLeft: 4, // balances the trailing letter-spacing so the word stays centred
   },
   headingGroup: { gap: 4 },
   heading: { fontSize: 22, fontWeight: '800', textAlign: 'center', letterSpacing: -0.4 },

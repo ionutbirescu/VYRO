@@ -176,10 +176,12 @@ const styles = StyleSheet.create({
     maxWidth: 440,
   },
   logo: {
+    fontFamily: InterFonts.bold,
     fontSize: 28,
-    fontWeight: '900',
+    lineHeight: 40,
     color: BrandColors.pink,
     letterSpacing: 4,
+    paddingLeft: 4, // balances the trailing letter-spacing so the word stays centred
     marginBottom: Spacing.two,
   },
   heading: { textAlign: 'center' },
