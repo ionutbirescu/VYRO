@@ -43,7 +43,7 @@ export default function ShopScreen() {
   const [busy, setBusy] = useState<string | null>(null);
 
   async function handlePurchaseSuccess(iapProductId: string) {
-    const { data } = await api.GET('/v1/me/entitlements');
+    const { data } = await api.GET('/v1/me/entitlements', {});
     if (data) setEnt(data);
     setProducts((prev) =>
       prev?.map((p) => {
@@ -58,7 +58,7 @@ export default function ShopScreen() {
   const { products: iapProducts, purchasing, purchase, restorePurchases } = useIAP(handlePurchaseSuccess);
 
   useEffect(() => {
-    Promise.all([api.GET('/v1/shop/products'), api.GET('/v1/me/entitlements')]).then(
+    Promise.all([api.GET('/v1/shop/products', {}), api.GET('/v1/me/entitlements', {})]).then(
       ([{ data: pl }, { data: e }]) => {
         setProducts(pl?.items ?? []);
         setEnt(e ?? null);

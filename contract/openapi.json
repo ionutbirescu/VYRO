@@ -3272,6 +3272,52 @@
         ]
       }
     },
+    "/v1/me/entitlements": {
+      "get": {
+        "tags": [
+          "shop"
+        ],
+        "summary": "Get Entitlements",
+        "operationId": "get_entitlements",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entitlements"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`registration_required`: signed in but no profile yet; call POST /v1/me",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/v1/me/cosmetics/{cosmetic_code}/equipped": {
       "put": {
         "tags": [
