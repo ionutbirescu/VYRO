@@ -1,0 +1,69 @@
+import { ExpoConfig, ConfigContext } from 'expo/config';
+
+export default ({ config }: ConfigContext): ExpoConfig => ({
+  ...config,
+  name: 'VYRO',
+  slug: 'vyro',
+  version: '1.0.0',
+  orientation: 'portrait',
+  icon: './assets/images/icon.png',
+  scheme: 'vyro',
+  userInterfaceStyle: 'automatic',
+  ios: {
+    icon: './assets/expo.icon',
+    bundleIdentifier: 'com.ionutbirescu.vyro',
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
+    },
+  },
+  android: {
+    adaptiveIcon: {
+      backgroundColor: '#E6F4FE',
+      foregroundImage: './assets/images/android-icon-foreground.png',
+      backgroundImage: './assets/images/android-icon-background.png',
+      monochromeImage: './assets/images/android-icon-monochrome.png',
+    },
+    predictiveBackGestureEnabled: false,
+  },
+  web: {
+    output: 'single',
+    favicon: './assets/images/favicon.png',
+  },
+  plugins: [
+    'expo-router',
+    [
+      'expo-splash-screen',
+      {
+        backgroundColor: '#208AEF',
+        image: './assets/images/splash-icon.png',
+        imageWidth: 76,
+      },
+    ],
+    'expo-font',
+    'expo-image',
+    'expo-status-bar',
+    'expo-web-browser',
+    [
+      'expo-image-picker',
+      {
+        cameraPermission: 'VYRO needs camera access to let you submit proof photos.',
+        microphonePermission: false,
+      },
+    ],
+  ],
+  experiments: {
+    typedRoutes: true,
+    reactCompiler: true,
+  },
+  extra: {
+    router: {
+      asyncRoutes: {
+        web: true,
+      },
+    },
+    eas: {
+      projectId: '5d95a7c2-1205-4a53-b079-1335de8402fa',
+    },
+  },
+  owner: 'biri28s-team',
+});
