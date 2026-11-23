@@ -3205,20 +3205,31 @@
         ]
       }
     },
-    "/v1/me/entitlements": {
-      "get": {
+    "/v1/shop/iap/validate": {
+      "post": {
         "tags": [
           "shop"
         ],
-        "summary": "Get Entitlements",
-        "operationId": "get_entitlements",
+        "summary": "Validate Iap",
+        "description": "Validate an Apple receipt and grant the purchased product.",
+        "operationId": "validate_iap",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IAPValidateRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
-          "200": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Entitlements"
+                  "$ref": "#/components/schemas/IAPValidateResult"
                 }
               }
             }
@@ -3239,6 +3250,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -4563,6 +4584,51 @@
           "version"
         ],
         "title": "HealthStatus"
+      },
+      "IAPValidateRequest": {
+        "properties": {
+          "product_code": {
+            "type": "string",
+            "title": "Product Code",
+            "description": "Internal product code, e.g. plus_monthly"
+          },
+          "receipt": {
+            "type": "string",
+            "title": "Receipt",
+            "description": "Base64-encoded Apple receipt from StoreKit"
+          },
+          "platform": {
+            "type": "string",
+            "const": "ios",
+            "title": "Platform"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "product_code",
+          "receipt",
+          "platform"
+        ],
+        "title": "IAPValidateRequest"
+      },
+      "IAPValidateResult": {
+        "properties": {
+          "product_code": {
+            "type": "string",
+            "title": "Product Code"
+          },
+          "entitlements": {
+            "$ref": "#/components/schemas/Entitlements"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "product_code",
+          "entitlements"
+        ],
+        "title": "IAPValidateResult"
       },
       "InterventionKind": {
         "type": "string",
