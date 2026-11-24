@@ -8,7 +8,6 @@
     "scheme": "vyro",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.ionutbirescu.vyro",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
