@@ -194,24 +194,27 @@ APPLE_PRODUCT_MAP: dict[str, str] = {
 }
 
 
-def _verify_apple_receipt(receipt: str) -> str | None:
-    """Verify receipt with Apple and return the product_id of the latest purchase, or None."""
+def _receipt_product_ids(receipt: str) -> set[str]:
+    """Verify an app receipt with Apple and return the product IDs it contains.
+
+    The app receipt holds every purchase of the app, not just the newest one, so the caller
+    checks that the product it wants to grant is among them.
+    """
     payload = {"receipt-data": receipt, "exclude-old-transactions": True}
     with httpx.Client(timeout=10) as client:
         resp = client.post(APPLE_RECEIPT_URL_PROD, json=payload)
         data = resp.json()
-        # Status 21007 means receipt is from sandbox — retry against sandbox
+        # Status 21007 means receipt is from sandbox (TestFlight) — retry against sandbox
         if data.get("status") == 21007:
             resp = client.post(APPLE_RECEIPT_URL_SANDBOX, json=payload)
             data = resp.json()
         if data.get("status") != 0:
-            return None
-        latest = data.get("latest_receipt_info") or data.get("receipt", {}).get("in_app", [])
-        if not latest:
-            return None
-        # Pick the most recent transaction
-        most_recent = max(latest, key=lambda t: int(t.get("purchase_date_ms", "0")))
-        return most_recent.get("product_id")
+            return set()
+        transactions = [
+            *(data.get("latest_receipt_info") or []),
+            *(data.get("receipt", {}).get("in_app") or []),
+        ]
+        return {t["product_id"] for t in transactions if t.get("product_id")}
 
 
 def _grant_product(db: DbSession, user: User, product_code: str, defn: _Def, now: datetime) -> None:
@@ -259,8 +262,7 @@ def validate_iap(body: IAPValidateRequest, user: CurrentUser, db: DbSession) -> 
     if apple_product_id is None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Product not mapped to Apple ID")
 
-    verified_product_id = _verify_apple_receipt(body.receipt)
-    if verified_product_id != apple_product_id:
+    if apple_product_id not in _receipt_product_ids(body.receipt):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Receipt verification failed")
 
     now = datetime.now(UTC)

@@ -31,6 +31,14 @@ function formatPrice(cents: number, currency: string) {
   }).format(cents / 100);
 }
 
+async function fetchShop() {
+  const [{ data: pl }, { data: e }] = await Promise.all([
+    api.GET('/v1/shop/products', {}),
+    api.GET('/v1/me/entitlements', {}),
+  ]);
+  return { items: pl?.items ?? [], entitlements: e ?? null };
+}
+
 function notify(title: string, message?: string) {
   if (Platform.OS === 'web') window.alert(message ? `${title}\n\n${message}` : title);
   else Alert.alert(title, message);
@@ -42,35 +50,45 @@ export default function ShopScreen() {
   const [ent, setEnt] = useState<Schemas['Entitlements'] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
-  async function handlePurchaseSuccess(iapProductId: string) {
-    const { data } = await api.GET('/v1/me/entitlements', {});
-    if (data) setEnt(data);
-    setProducts((prev) =>
-      prev?.map((p) => {
-        const mappedId = PRODUCT_ID_MAP[p.code];
-        return mappedId === iapProductId ? { ...p, owned: true } : p;
-      }) ?? null,
-    );
-    await refreshProfile();
+  function show(shop: Awaited<ReturnType<typeof fetchShop>>) {
+    setProducts(shop.items);
+    setEnt(shop.entitlements);
+  }
+
+  async function reload() {
+    // Keep what's on screen if the refresh fails; the next visit loads it again.
+    await fetchShop().then(show, () => {});
+  }
+
+  async function handlePurchaseSuccess() {
+    await Promise.all([reload(), refreshProfile()]);
     notify('Purchase successful!', 'Your purchase is now active.');
   }
 
   const { products: iapProducts, purchasing, purchase, restorePurchases } = useIAP(handlePurchaseSuccess);
 
   useEffect(() => {
-    Promise.all([api.GET('/v1/shop/products', {}), api.GET('/v1/me/entitlements', {})]).then(
-      ([{ data: pl }, { data: e }]) => {
-        setProducts(pl?.items ?? []);
-        setEnt(e ?? null);
+    fetchShop().then(
+      ({ items, entitlements }) => {
+        setProducts(items);
+        setEnt(entitlements);
       },
       () => setProducts([]),
     );
   }, []);
 
+  async function restore() {
+    const restored = await restorePurchases();
+    if (restored === null) return notify('Restore failed', 'Could not restore purchases. Please try again.');
+    if (restored === 0) return notify('Nothing to restore', 'No earlier purchases were found.');
+    await Promise.all([reload(), refreshProfile()]);
+    notify('Purchases restored', 'Your earlier purchases are active again.');
+  }
+
   function getIAPPrice(productCode: string): string | null {
     const iapId = PRODUCT_ID_MAP[productCode];
     if (!iapId) return null;
-    return iapProducts.find((p) => p.productId === iapId)?.price ?? null;
+    return iapProducts.find((p) => p.id === iapId)?.displayPrice ?? null;
   }
 
   async function buy(product: Schemas['Product']) {
@@ -215,7 +233,7 @@ export default function ShopScreen() {
 
       {products.length === 0 && <Text style={styles.empty}>The shop is empty right now.</Text>}
 
-      <Pressable onPress={restorePurchases} disabled={purchasing === 'restore'} style={styles.restoreBtn}>
+      <Pressable onPress={restore} disabled={purchasing === 'restore'} style={styles.restoreBtn}>
         <Text style={styles.restoreText}>
           {purchasing === 'restore' ? 'Restoring…' : 'Restore purchases'}
         </Text>
